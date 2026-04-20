@@ -1,4 +1,4 @@
-jieba.NET是[jieba中文分词](https://github.com/fxsjy/jieba)的.NET版本（C#实现）。
+jieba.NETAOT是[jieba中文分词](https://github.com/fxsjy/jieba)的.NET版本（C#实现），支持AOT编译。
 
 当前版本为0.42.2，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
 
