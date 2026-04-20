@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using JiebaNet.Segmenter.Common;
-using Newtonsoft.Json;
 
 namespace JiebaNet.Segmenter.PosSeg
 {
@@ -64,17 +63,13 @@ namespace JiebaNet.Segmenter.PosSeg
 
         private static void LoadModel()
         {
-            var startJson = File.ReadAllText(Path.GetFullPath(ConfigManager.PosProbStartFile));
-            _startProbs = JsonConvert.DeserializeObject<IDictionary<string, double>>(startJson);
+            _startProbs = JsonHelper.ParseStringDoubleDict(ConfigManager.PosProbStartFile);
 
-            var transJson = File.ReadAllText(Path.GetFullPath(ConfigManager.PosProbTransFile));
-            _transProbs = JsonConvert.DeserializeObject<IDictionary<string, IDictionary<string, double>>>(transJson);
+            _transProbs = JsonHelper.ParseStringStringDoubleDict(ConfigManager.PosProbTransFile);
 
-            var emitJson = File.ReadAllText(Path.GetFullPath(ConfigManager.PosProbEmitFile));
-            _emitProbs = JsonConvert.DeserializeObject<IDictionary<string, IDictionary<char, double>>>(emitJson);
+            _emitProbs = JsonHelper.ParseStringCharDoubleDict(ConfigManager.PosProbEmitFile);
 
-            var tabJson = File.ReadAllText(Path.GetFullPath(ConfigManager.CharStateTabFile));
-            _stateTab = JsonConvert.DeserializeObject<IDictionary<char, List<string>>>(tabJson);
+            _stateTab = JsonHelper.ParseCharStringListDict(ConfigManager.CharStateTabFile);
         }
 
         // TODO: change sentence to obs?

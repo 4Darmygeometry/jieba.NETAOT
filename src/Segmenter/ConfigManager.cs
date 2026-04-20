@@ -1,5 +1,4 @@
-﻿using System;
-using System.Configuration;
+using System;
 using System.IO;
 using JiebaNet.Segmenter.Common;
 
@@ -15,7 +14,7 @@ namespace JiebaNet.Segmenter
             {
                 if (_configFileBaseDir.IsNull())
                 {
-                    var configFileDir = ConfigurationManager.AppSettings["JiebaConfigFileDir"] ?? "Resources";
+                    var configFileDir = "Resources";
                     if (!Path.IsPathRooted(configFileDir))
                     {
                         var domainDir = AppDomain.CurrentDomain.BaseDirectory;

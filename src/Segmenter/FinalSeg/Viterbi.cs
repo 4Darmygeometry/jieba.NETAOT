@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using JiebaNet.Segmenter.Common;
-using Newtonsoft.Json;
 
 namespace JiebaNet.Segmenter.FinalSeg
 {
@@ -75,11 +74,9 @@ namespace JiebaNet.Segmenter.FinalSeg
                 {'S', -1.4652633398537678}
             };
 
-            var transJson = File.ReadAllText(Path.GetFullPath(ConfigManager.ProbTransFile));
-            _transProbs = JsonConvert.DeserializeObject<IDictionary<char, IDictionary<char, double>>>(transJson);
+            _transProbs = JsonHelper.ParseCharCharDoubleDict(ConfigManager.ProbTransFile);
 
-            var emitJson = File.ReadAllText(Path.GetFullPath(ConfigManager.ProbEmitFile));
-            _emitProbs = JsonConvert.DeserializeObject<IDictionary<char, IDictionary<char, double>>>(emitJson);
+            _emitProbs = JsonHelper.ParseCharCharDoubleDict(ConfigManager.ProbEmitFile);
 
             stopWatch.Stop();
             Debug.WriteLine("model loading finished, time elapsed {0} ms.", stopWatch.ElapsedMilliseconds);
