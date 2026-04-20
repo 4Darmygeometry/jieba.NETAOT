@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.IO;
-using System.Reflection;
 using NUnit.Framework;
 
 namespace JiebaNet.Segmenter.Tests
@@ -11,10 +10,8 @@ namespace JiebaNet.Segmenter.Tests
         [OneTimeSetUp]
         public void RunBeforeAnyTests()
         {
-            var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = AppContext.BaseDirectory;
             Directory.SetCurrentDirectory(dir);
-
-            ConfigManager.ConfigFileBaseDir = @"/Users/andersc/dev/lib/jiebanet";
         }
 
         [OneTimeTearDown]

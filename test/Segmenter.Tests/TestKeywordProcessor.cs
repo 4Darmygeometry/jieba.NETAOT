@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -39,14 +39,14 @@ namespace JiebaNet.Segmenter.Tests
             
             var keywords = kp.ExtractKeywords("I am learning .net core and c# 8.0");
             var expected = new List<string> { ".net core", "C# 8.0"};
-            CollectionAssert.AreEqual(expected, keywords);
+            Assert.That(keywords, Is.EqualTo(expected));
             
             Assert.That(kp.Contains("C# 8.0"), Is.True);
             kp.RemoveKeyword("C# 8.0");
             Assert.That(kp.Contains("C# 8.0"), Is.False);
             keywords = kp.ExtractKeywords("I am learning .net core and c# 8.0");
             expected = new List<string> { ".net core"};
-            CollectionAssert.AreEqual(expected, keywords);
+            Assert.That(keywords, Is.EqualTo(expected));
         }
 
         [TestCase]
@@ -56,7 +56,7 @@ namespace JiebaNet.Segmenter.Tests
             kp.AddKeywords(new []{"Big Apple", "Bay Area"});
             var keywords = kp.ExtractKeywords("I love Big Apple and Bay Area.");
             var expected = new List<string> { "Big Apple", "Bay Area"};
-            CollectionAssert.AreEqual(expected, keywords);
+            Assert.That(keywords, Is.EqualTo(expected));
         }
         
         [TestCase]
@@ -66,7 +66,7 @@ namespace JiebaNet.Segmenter.Tests
             kp.AddKeywords(new []{"Big Apple", "Bay Area"});
             var keywords = kp.ExtractKeywordSpans("I love Big Apple and Bay Area.");
             var expected = new List<TextSpan> { new TextSpan("Big Apple", 7, 16), new TextSpan("Bay Area", 21, 29)};
-            CollectionAssert.AreEqual(expected, keywords);
+            Assert.That(keywords, Is.EqualTo(expected));
         }
         
         [TestCase]
@@ -85,11 +85,11 @@ namespace JiebaNet.Segmenter.Tests
             
             var keywords = kp.ExtractKeywords(".net core.");
             var expected = new List<string> { ".NET Core"};
-            CollectionAssert.AreEqual(expected, keywords);
+            Assert.That(keywords, Is.EqualTo(expected));
             
             keywords = kp.ExtractKeywords(".net core");
             expected = new List<string> { ".NET Core"};
-            CollectionAssert.AreEqual(expected, keywords);
+            Assert.That(keywords, Is.EqualTo(expected));
         }
         
         [TestCase]
@@ -100,7 +100,7 @@ namespace JiebaNet.Segmenter.Tests
             var keywords = kp.ExtractKeywords("你需要通过cet-4考试，学习c语言、.NET core、网络 编程、JavaScript，掌握字典 tree的用法");
             // Java is not extracted.
             var expected = new List<string> { "CET-4", "C语言", ".NET Core", "网络 编程", "字典 tree"};
-            CollectionAssert.AreEqual(expected, keywords);
+            Assert.That(keywords, Is.EqualTo(expected));
         }
         
         [TestCase]
@@ -112,7 +112,7 @@ namespace JiebaNet.Segmenter.Tests
                 kp.ExtractKeywords("你需要通过cet-4考试，学习c语言、.NET core、网络 编程、JavaScript，掌握字典 tree的用法", raw: true);
             // Java is not extracted.
             var expected = new List<string> { "cet-4", "c语言", ".NET core", "网络 编程", "字典 tree"};
-            CollectionAssert.AreEqual(expected, keywords);
+            Assert.That(keywords, Is.EqualTo(expected));
         }
     }
 }

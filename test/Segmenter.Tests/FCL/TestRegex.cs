@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text.RegularExpressions;
 using JiebaNet.Segmenter.Common;
 using NUnit.Framework;
@@ -62,7 +62,7 @@ namespace JiebaNet.Segmenter.Tests.FCL
             Assert.That(mat.Groups["word"].Value.Trim(), Is.EqualTo("Steve Jobs"));
             Assert.That(mat.Groups["freq"].Value.Trim(), Is.EqualTo(""));
             Assert.That(mat.Groups["tag"].Value.Trim(), Is.EqualTo(""));
-            CollectionAssert.AreEqual(mat.Groups.SubGroupValues(), new [] { "Steve Jobs", "", "" });
+            Assert.That(mat.Groups.SubGroupValues(), Is.EqualTo(new [] { "Steve Jobs", "", "" }));
         }
 
         [TestCase]
