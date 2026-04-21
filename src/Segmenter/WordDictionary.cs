@@ -18,6 +18,11 @@ namespace JiebaNet.Segmenter
         internal IDictionary<string, int> Trie = new Dictionary<string, int>();
 
         /// <summary>
+        /// Emoji专用前缀树，用于快速匹配复杂emoji（ZWJ序列等）
+        /// </summary>
+        internal IDictionary<string, int> EmojiTrie = new Dictionary<string, int>();
+
+        /// <summary>
         /// 字符串池，用于缓存高频字符串切片，减少GC压力
         /// </summary>
         private readonly Dictionary<int, string> _stringPool = new Dictionary<int, string>();
@@ -121,6 +126,7 @@ namespace JiebaNet.Segmenter
         /// 加载emoji词典文件
         /// emoji词典格式：emoji 频率 词性（每行一个emoji）
         /// 使用Rune正确处理多码点emoji
+        /// 同时构建emoji专用前缀树，用于快速匹配复杂emoji
         /// </summary>
         /// <param name="dictFile">emoji词典文件路径</param>
         private void LoadEmojiDictFile(string dictFile)
@@ -154,8 +160,17 @@ namespace JiebaNet.Segmenter
                     Trie[emoji] = freq;
                     Total += freq;
 
-                    // emoji不需要添加前缀到trie树，因为emoji是独立的字符序列
-                    // 如果添加前缀会导致代理对被错误拆分
+                    // 构建emoji专用前缀树（包含前缀，用于匹配）
+                    EmojiTrie[emoji] = freq;
+                    for (var i = 0; i < emoji.Length; i++)
+                    {
+                        var prefix = emoji.Substring(0, i + 1);
+                        if (!EmojiTrie.ContainsKey(prefix))
+                        {
+                            EmojiTrie[prefix] = 0;
+                        }
+                    }
+
                     count++;
                 }
             }
@@ -271,6 +286,74 @@ namespace JiebaNet.Segmenter
             }
 
             return Math.Max((int)(freq * Total) + 1, GetFreqOrDefault(word));
+        }
+
+        /// <summary>
+        /// 尝试从文本的指定位置匹配最长的emoji
+        /// 用于处理复杂emoji（ZWJ序列、变体选择符等）
+        /// </summary>
+        /// <param name="text">源文本</param>
+        /// <param name="startIndex">开始匹配的位置</param>
+        /// <returns>匹配到的emoji长度，如果没有匹配到返回0</returns>
+        public int MatchEmoji(string text, int startIndex)
+        {
+            if (startIndex >= text.Length)
+                return 0;
+
+            var maxLen = 0;
+            var len = 1;
+
+            // 限制最大匹配长度（最长的emoji约20个字符）
+            var maxCheck = Math.Min(text.Length - startIndex, 30);
+
+            while (len <= maxCheck)
+            {
+                var substr = text.Substring(startIndex, len);
+                if (EmojiTrie.ContainsKey(substr))
+                {
+                    // 如果是完整emoji（freq > 0），记录长度
+                    if (EmojiTrie[substr] > 0)
+                    {
+                        maxLen = len;
+                    }
+                    len++;
+                }
+                else
+                {
+                    // 前缀不匹配，停止
+                    break;
+                }
+            }
+
+            return maxLen;
+        }
+
+        /// <summary>
+        /// 检查指定位置是否可能是emoji的开始
+        /// </summary>
+        /// <param name="text">源文本</param>
+        /// <param name="startIndex">开始位置</param>
+        /// <returns>如果是emoji前缀返回true</returns>
+        public bool IsEmojiPrefix(string text, int startIndex)
+        {
+            if (startIndex >= text.Length)
+                return false;
+
+            var ch = text[startIndex];
+            // 快速检查：emoji通常是代理对或特定范围
+            if (char.IsSurrogate(ch) && char.IsHighSurrogate(ch))
+            {
+                return true;
+            }
+
+            // 检查是否在emoji前缀树中
+            if (startIndex < text.Length)
+            {
+                var substr = text.Substring(startIndex, 1);
+                return EmojiTrie.ContainsKey(substr);
+            }
+
+            return false;
         }
     }
 }

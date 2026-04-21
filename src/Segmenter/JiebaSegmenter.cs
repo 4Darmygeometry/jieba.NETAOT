@@ -401,12 +401,37 @@ namespace JiebaNet.Segmenter
                         }
                         else if (!cutAll)
                         {
-                            // 使用Grapheme Cluster正确处理emoji
-                            // 包括ZWJ序列、变体选择符、肤色修饰符等复杂emoji
-                            var graphemes = RuneHelper.SplitToGraphemes(x);
-                            foreach (var grapheme in graphemes)
+                            // 优先使用emoji词典匹配复杂emoji
+                            // 如果匹配到emoji词典中的词，直接作为一个整体
+                            // 否则使用Grapheme Cluster分割
+                            var i = 0;
+                            while (i < x.Length)
                             {
-                                result.Add(grapheme);
+                                // 尝试匹配emoji词典
+                                var emojiLen = WordDict.MatchEmoji(x, i);
+                                if (emojiLen > 0)
+                                {
+                                    // 匹配到emoji，直接添加
+                                    result.Add(x.Substring(i, emojiLen));
+                                    i += emojiLen;
+                                }
+                                else
+                                {
+                                    // 没有匹配到emoji，使用Grapheme Cluster分割
+                                    // 找到下一个可能的emoji开始位置
+                                    var graphemes = RuneHelper.SplitToGraphemes(x.Substring(i));
+                                    if (graphemes.Count > 0)
+                                    {
+                                        result.Add(graphemes[0]);
+                                        i += graphemes[0].Length;
+                                    }
+                                    else
+                                    {
+                                        // 兜底：单字符
+                                        result.Add(x[i].ToString());
+                                        i++;
+                                    }
+                                }
                             }
                         }
                         else
