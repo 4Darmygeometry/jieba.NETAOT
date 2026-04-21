@@ -91,24 +91,27 @@ namespace JiebaNet.Segmenter
             {
                 if (w.Length > 2)
                 {
-                    foreach (var i in Enumerable.Range(0, w.Length - 1))
+                    // 使用Span优化，避免重复Substring分配
+                    var wSpan = w.AsSpan();
+                    for (var i = 0; i < w.Length - 1; i++)
                     {
-                        var gram2 = w.Substring(i, 2);
+                        var gram2 = wSpan.Slice(i, 2);
                         if (WordDict.ContainsWord(gram2))
                         {
-                            result.Add(gram2);
+                            result.Add(gram2.ToString());
                         }
                     }
                 }
 
                 if (w.Length > 3)
                 {
-                    foreach (var i in Enumerable.Range(0, w.Length - 2))
+                    var wSpan = w.AsSpan();
+                    for (var i = 0; i < w.Length - 2; i++)
                     {
-                        var gram3 = w.Substring(i, 3);
+                        var gram3 = wSpan.Slice(i, 3);
                         if (WordDict.ContainsWord(gram3))
                         {
-                            result.Add(gram3);
+                            result.Add(gram3.ToString());
                         }
                     }
                 }
@@ -151,23 +154,25 @@ namespace JiebaNet.Segmenter
                     var width = w.Length;
                     if (width > 2)
                     {
+                        var wSpan = w.AsSpan();
                         for (var i = 0; i < width - 1; i++)
                         {
-                            var gram2 = w.Substring(i, 2);
+                            var gram2 = wSpan.Slice(i, 2);
                             if (WordDict.ContainsWord(gram2))
                             {
-                                result.Add(new Token(gram2, start + i, start + i + 2));
+                                result.Add(new Token(gram2.ToString(), start + i, start + i + 2));
                             }
                         }
                     }
                     if (width > 3)
                     {
+                        var wSpan = w.AsSpan();
                         for (var i = 0; i < width - 2; i++)
                         {
-                            var gram3 = w.Substring(i, 3);
+                            var gram3 = wSpan.Slice(i, 3);
                             if (WordDict.ContainsWord(gram3))
                             {
-                                result.Add(new Token(gram3, start + i, start + i + 3));
+                                result.Add(new Token(gram3.ToString(), start + i, start + i + 3));
                             }
                         }
                     }
@@ -182,31 +187,38 @@ namespace JiebaNet.Segmenter
 
         #region Internal Cut Methods
 
+        /// <summary>
+        /// 构建有向无环图(DAG)，使用Span优化字符串切片
+        /// </summary>
         internal IDictionary<int, List<int>> GetDag(string sentence)
         {
             var dag = new Dictionary<int, List<int>>();
-            var trie = WordDict.Trie;
-
+            var sentenceSpan = sentence.AsSpan();
             var N = sentence.Length;
-            for (var k = 0; k < sentence.Length; k++)
+
+            for (var k = 0; k < N; k++)
             {
                 var templist = new List<int>();
                 var i = k;
-                var frag = sentence.Substring(k, 1);
-                while (i < N && trie.ContainsKey(frag))
+                
+                // 使用Span进行切片，避免Substring分配
+                var frag = sentenceSpan.Slice(k, 1);
+                while (i < N && WordDict.ContainsPrefix(frag))
                 {
-                    if (trie[frag] > 0)
+                    var trieValue = WordDict.GetTrieValue(frag);
+                    if (trieValue > 0)
                     {
                         templist.Add(i);
                     }
 
                     i++;
-                    // TODO:
                     if (i < N)
                     {
-                        frag = sentence.Sub(k, i + 1);
+                        // 使用Span切片，长度为 (i + 1 - k)
+                        frag = sentenceSpan.Slice(k, i + 1 - k);
                     }
                 }
+                
                 if (templist.Count == 0)
                 {
                     templist.Add(k);
@@ -217,19 +229,26 @@ namespace JiebaNet.Segmenter
             return dag;
         }
 
+        /// <summary>
+        /// 计算最大概率路径，使用Span优化字符串切片
+        /// </summary>
         internal IDictionary<int, Pair<int>> Calc(string sentence, IDictionary<int, List<int>> dag)
         {
             var n = sentence.Length;
             var route = new Dictionary<int, Pair<int>>();
             route[n] = new Pair<int>(0, 0.0);
 
+            var sentenceSpan = sentence.AsSpan();
             var logtotal = Math.Log(WordDict.Total);
+            
             for (var i = n - 1; i > -1; i--)
             {
                 var candidate = new Pair<int>(-1, double.MinValue);
                 foreach (int x in dag[i])
                 {
-                    var freq = Math.Log(WordDict.GetFreqOrDefault(sentence.Sub(i, x + 1))) - logtotal + route[x + 1].Freq;
+                    // 使用Span切片获取子串
+                    var subSpan = sentenceSpan.Slice(i, x + 1 - i);
+                    var freq = Math.Log(WordDict.GetFreqOrDefault(subSpan)) - logtotal + route[x + 1].Freq;
                     if (candidate.Freq < freq)
                     {
                         candidate.Freq = freq;
@@ -382,12 +401,12 @@ namespace JiebaNet.Segmenter
                         }
                         else if (!cutAll)
                         {
-                            // 使用RuneHelper正确处理emoji和代理对
-                            // 避免将emoji拆分成代理对
-                            var runes = RuneHelper.SplitToRunes(x);
-                            foreach (var rune in runes)
+                            // 使用Grapheme Cluster正确处理emoji
+                            // 包括ZWJ序列、变体选择符、肤色修饰符等复杂emoji
+                            var graphemes = RuneHelper.SplitToGraphemes(x);
+                            foreach (var grapheme in graphemes)
                             {
-                                result.Add(rune);
+                                result.Add(grapheme);
                             }
                         }
                         else

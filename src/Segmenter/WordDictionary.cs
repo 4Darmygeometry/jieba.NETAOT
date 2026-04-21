@@ -18,6 +18,11 @@ namespace JiebaNet.Segmenter
         internal IDictionary<string, int> Trie = new Dictionary<string, int>();
 
         /// <summary>
+        /// 字符串池，用于缓存高频字符串切片，减少GC压力
+        /// </summary>
+        private readonly Dictionary<int, string> _stringPool = new Dictionary<int, string>();
+
+        /// <summary>
         /// total occurrence of all words.
         /// </summary>
         public double Total { get; set; }
@@ -164,12 +169,73 @@ namespace JiebaNet.Segmenter
             return Trie.ContainsKey(word) && Trie[word] > 0;
         }
 
+        /// <summary>
+        /// 使用Span检查词是否存在（高性能版本）
+        /// </summary>
+        public bool ContainsWord(ReadOnlySpan<char> word)
+        {
+            var key = GetOrCreateString(word);
+            return Trie.TryGetValue(key, out var freq) && freq > 0;
+        }
+
         public int GetFreqOrDefault(string key)
         {
             if (ContainsWord(key))
                 return Trie[key];
             else
                 return 1;
+        }
+
+        /// <summary>
+        /// 使用Span获取词频（高性能版本）
+        /// </summary>
+        public int GetFreqOrDefault(ReadOnlySpan<char> key)
+        {
+            var str = GetOrCreateString(key);
+            if (Trie.TryGetValue(str, out var freq) && freq > 0)
+                return freq;
+            return 1;
+        }
+
+        /// <summary>
+        /// 检查前缀是否存在于Trie中（高性能版本）
+        /// 用于DAG构建时的快速查找
+        /// </summary>
+        public bool ContainsPrefix(ReadOnlySpan<char> prefix)
+        {
+            var key = GetOrCreateString(prefix);
+            return Trie.ContainsKey(key);
+        }
+
+        /// <summary>
+        /// 获取前缀的频率值（0表示只是前缀，>0表示是完整词）
+        /// </summary>
+        public int GetTrieValue(ReadOnlySpan<char> key)
+        {
+            var str = GetOrCreateString(key);
+            return Trie.TryGetValue(str, out var value) ? value : -1;
+        }
+
+        /// <summary>
+        /// 从字符串池获取或创建字符串实例
+        /// 减少重复字符串的分配
+        /// </summary>
+        private string GetOrCreateString(ReadOnlySpan<char> span)
+        {
+            var hash = span.GetSpanHashCode();
+            if (_stringPool.TryGetValue(hash, out var cached))
+            {
+                // 验证哈希冲突
+                if (cached.AsSpan().SequenceEqual(span))
+                {
+                    return cached;
+                }
+            }
+
+            // 创建新字符串并缓存
+            var newString = span.ToString();
+            _stringPool[hash] = newString;
+            return newString;
         }
 
         public void AddWord(string word, int freq, string tag = null)
