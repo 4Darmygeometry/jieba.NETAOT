@@ -108,7 +108,7 @@ jobs:
 
       - name: Pack jieba.NETAOT
         run: |
-          msbuild -t:Pack -p:Configuration=Release -p:Version=${{ steps.get_version.outputs.VERSION }} src/jieba.NETAOT/jieba.NETAOT.csproj
+          dotnet msbuild -t:Pack -p:Configuration=Release -p:Version=${{ steps.get_version.outputs.VERSION }} src/jieba.NETAOT/jieba.NETAOT.csproj
           mkdir -p artifacts
           cp src/jieba.NETAOT/bin/Release/jieba.NETAOT.*.nupkg artifacts/
 
