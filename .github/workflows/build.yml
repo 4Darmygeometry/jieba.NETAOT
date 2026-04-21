@@ -15,9 +15,6 @@ env:
 jobs:
   build-and-test:
     runs-on: windows-latest
-    strategy:
-      matrix:
-        targetFramework: [ net10.0, netstandard2.0, net48 ]
     steps:
       - uses: actions/checkout@v4
 
@@ -29,12 +26,29 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
-      - name: Build
-        run: dotnet build --no-restore -c Release -f ${{ matrix.targetFramework }}
+      - name: Build Segmenter (all frameworks)
+        run: dotnet build src/Segmenter/Segmenter.csproj -c Release
 
-      - name: Run tests (net10.0 only)
-        if: matrix.targetFramework == 'net10.0'
-        run: dotnet test test/Segmenter.Tests/Segmenter.Tests.csproj --no-build -c Release -f net10.0 -v normal
+      - name: Build Analyser (all frameworks)
+        run: dotnet build src/Analyser/Analyser.csproj -c Release
+
+      - name: Build jieba.NETAOT (all frameworks)
+        run: dotnet build src/jieba.NETAOT/jieba.NETAOT.csproj -c Release
+
+      - name: Build Segmenter.Cli (all frameworks)
+        run: dotnet build src/Segmenter.Cli/Segmenter.Cli.csproj -c Release
+
+      - name: Build AotTest
+        run: dotnet build test/AotTest/AotTest.csproj -c Release
+
+      - name: Build Segmenter.Tests
+        run: dotnet build test/Segmenter.Tests/Segmenter.Tests.csproj -c Release
+
+      - name: Build NetFrameworkTest
+        run: dotnet build test/NetFrameworkTest/NetFrameworkTest.csproj -c Release
+
+      - name: Run tests
+        run: dotnet test test/Segmenter.Tests/Segmenter.Tests.csproj -c Release -v normal
 
   aot-test:
     runs-on: windows-latest
