@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <ItemGroup>
+    <JiebaResourceFiles Include="$(MSBuildThisFileDirectory)..\content\Resources\**\*" />
+  </ItemGroup>
+
+  <Target Name="CopyJiebaResources" AfterTargets="Build" Condition="!Exists('$(OutDir)Resources\dict.txt')">
+    <Copy SourceFiles="@(JiebaResourceFiles)" DestinationFolder="$(OutDir)Resources\%(RecursiveDir)" />
+    <Message Text="已复制AOTba词库文件到输出目录" Importance="high" />
+  </Target>
+
+</Project>

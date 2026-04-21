@@ -4,20 +4,20 @@
     <TargetFrameworks>net10.0;netstandard2.0;net48</TargetFrameworks>
     <RootNamespace>JiebaNet.Segmenter</RootNamespace>
     <Version>1.0.0</Version>
-    <Description>jieba.NETAOT - AOT-friendly Chinese text segmentation library with emoji support. 支持AOT编译、emoji分词、繁体中文的结巴分词.NET库。</Description>
+    <Description>AOTba - 支持AOT编译的jieba.NET中文分词库。支持emoji分词、繁体中文。</Description>
     <Company>4Darmygeometry</Company>
     <Authors>andersc;4Darmygeometry</Authors>
     <Copyright>Copyright © andersc, 4Darmygeometry 2026</Copyright>
     <RepositoryUrl>https://github.com/4Darmygeometry/jieba.NETAOT/</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>chinese;nlp;segmentation;jieba;aot;emoji;traditional-chinese</PackageTags>
-    <PackageId>jieba.NETAOT</PackageId>
+    <PackageId>AOTba</PackageId>
     <IsPackable>true</IsPackable>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <NoPackageAnalysis>true</NoPackageAnalysis>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    <NuspecFile>jieba.NETAOT.nuspec</NuspecFile>
+    <NuspecFile>AOTba.nuspec</NuspecFile>
     <NuspecProperties>version=$(Version);Configuration=$(Configuration)</NuspecProperties>
   </PropertyGroup>
 
