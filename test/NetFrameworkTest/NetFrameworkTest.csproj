@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <RootNamespace>JiebaNet.NetFrameworkTest</RootNamespace>
+    <AssemblyName>JiebaNet.NetFrameworkTest</AssemblyName>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Segmenter\Segmenter.csproj" />
+    <ProjectReference Include="..\..\src\Analyser\Analyser.csproj" />
+  </ItemGroup>
+
+</Project>
