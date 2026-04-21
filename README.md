@@ -1,6 +1,6 @@
 jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的.NET版本（C#实现），支持AOT编译。
 
-当前版本为1.0.0，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
+当前版本为1.0.1，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
 
 此外，也提供了 `KeywordProcessor`，参考 [FlashText](https://github.com/vi3k6i5/flashtext) 实现。`KeywordProcessor` 可以更灵活地从文本中提取**词典中的关键词**，比如忽略大小写、含空格的词等。
 
@@ -15,6 +15,7 @@ jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的
 * 支持**繁体分词**
 * 支持添加自定义词典和自定义词
 * 支持含Emoji句子断句
+* 支持带变体选择符和ZWJ的复杂emoji断句
 * 可AOT编译
 * MIT 授权协议
 
