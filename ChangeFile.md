@@ -20,4 +20,11 @@
 .\test\AotTest\AotTest.csproj
 .\test\AotTest\Program.cs
 .\.github\workflows\build.yml
+.\jieba.NET.slnx
+.\src\jieba.NETAOT\jieba.NETAOT.csproj
+.\src\jieba.NETAOT\AOTba.nuspec
+.\src\jieba.NETAOT\build\AOTba.props
+.\src\jieba.NETAOT\buildMultiTargeting\AOTba.props
+.\test\NetFrameworkTest\NetFrameworkTest.csproj
+.\test\NetFrameworkTest\Program.cs
 ```
