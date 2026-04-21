@@ -18,7 +18,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <NuspecFile>jieba.NETAOT.nuspec</NuspecFile>
-    <NuspecProperties>Configuration=$(Configuration)</NuspecProperties>
+    <NuspecProperties>version=$(Version);Configuration=$(Configuration)</NuspecProperties>
   </PropertyGroup>
 
   <ItemGroup>
