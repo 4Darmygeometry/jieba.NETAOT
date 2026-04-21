@@ -11,7 +11,7 @@
     <projectUrl>https://github.com/4Darmygeometry/jieba.NETAOT/</projectUrl>
     <description>AOTba是jieba中文分词的.NET版本（C#实现），支持AOT编译。
 
-当前版本为1.0.0，基于jieba 0.42，提供与jieba基本一致的功能与接口，但不支持其最新的paddle模式。关于jieba的实现思路，可以看看这篇wiki里提到的资料。
+基于jieba 0.42，提供与jieba基本一致的功能与接口，但不支持其最新的paddle模式。关于jieba的实现思路，可以看看这篇wiki里提到的资料。
 
 此外，也提供了KeywordProcessor，参考FlashText实现。KeywordProcessor可以更灵活地从文本中提取词典中的关键词，比如忽略大小写、含空格的词等。
 
