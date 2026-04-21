@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net10.0;netstandard2.0;net48</TargetFrameworks>
+    <TargetFrameworks>net10.0;netstandard2.1;net48</TargetFrameworks>
     <RootNamespace>JiebaNet.Segmenter</RootNamespace>
     <Version>1.0.1</Version>
     <Description>AOTba - 支持AOT编译的jieba.NET中文分词库。支持emoji分词、繁体中文。</Description>
