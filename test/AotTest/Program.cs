@@ -23,6 +23,8 @@ class Program
         allPassed &= TestTfidfExtractor();
         allPassed &= TestTextRankExtractor();
         allPassed &= TestTokenize();
+        allPassed &= TestEmojiSegment();
+        allPassed &= TestTraditionalChineseSegment();
 
         Console.WriteLine();
         if (allPassed)
@@ -195,6 +197,66 @@ class Program
                 return true;
             }
             Console.WriteLine("  失败 ✗");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  异常: {ex.Message}");
+            return false;
+        }
+    }
+
+    static bool TestEmojiSegment()
+    {
+        Console.WriteLine("[测试] Emoji分词...");
+        try
+        {
+            var segmenter = new JiebaSegmenter();
+            // 测试包含emoji的文本
+            var text = "今天天气真好😀明天去爬山🎉";
+            var result = segmenter.Cut(text).ToList();
+            var joined = string.Join("/", result);
+            Console.WriteLine($"  输入: {text}");
+            Console.WriteLine($"  结果: {joined}");
+            // 检查emoji是否被正确识别为独立词
+            // 使用字符检查而非字符串包含检查，避免编码问题
+            var hasEmoji = result.Any(w => w == "😀" || w == "🎉");
+            if (hasEmoji)
+            {
+                Console.WriteLine("  通过 ✓");
+                return true;
+            }
+            // 输出分词结果用于调试
+            Console.WriteLine($"  分词结果数量: {result.Count}");
+            Console.WriteLine("  失败 ✗ emoji未被正确识别");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  异常: {ex.Message}");
+            return false;
+        }
+    }
+
+    static bool TestTraditionalChineseSegment()
+    {
+        Console.WriteLine("[测试] 繁体中文分词...");
+        try
+        {
+            var segmenter = new JiebaSegmenter();
+            // 测试繁体中文文本
+            var text = "我來到北京清華大學";
+            var result = segmenter.Cut(text);
+            var joined = string.Join("/", result);
+            Console.WriteLine($"  输入: {text}");
+            Console.WriteLine($"  结果: {joined}");
+            // 检查繁体中文词汇是否被正确识别
+            if (joined.Contains("清華大學") || joined.Contains("清華") || joined.Contains("大學"))
+            {
+                Console.WriteLine("  通过 ✓");
+                return true;
+            }
+            Console.WriteLine("  失败 ✗ 繁体中文未被正确识别");
             return false;
         }
         catch (Exception ex)
