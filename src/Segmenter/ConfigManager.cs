@@ -66,5 +66,25 @@ namespace JiebaNet.Segmenter
         public static string IdfFile => Path.Combine(ConfigFileBaseDir, "idf.txt");
 
         public static string StopWordsFile => Path.Combine(ConfigFileBaseDir, "stopwords.txt");
+
+        /// <summary>
+        /// emoji词典文件路径
+        /// </summary>
+        public static string EmojiDictFile => Path.Combine(ConfigFileBaseDir, "emoji.txt");
+
+        /// <summary>
+        /// 繁体中文词典文件路径
+        /// </summary>
+        public static string MainDictHantFile => Path.Combine(ConfigFileBaseDir, "dict-hant.txt");
+
+        /// <summary>
+        /// 繁体中文IDF文件路径
+        /// </summary>
+        public static string IdfHantFile => Path.Combine(ConfigFileBaseDir, "idf-hant.txt");
+
+        /// <summary>
+        /// 繁体中文停用词文件路径
+        /// </summary>
+        public static string StopWordsHantFile => Path.Combine(ConfigFileBaseDir, "stopwords-hant.txt");
     }
 }

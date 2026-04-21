@@ -33,6 +33,17 @@ namespace JiebaNet.Segmenter
 
         internal static readonly Regex RegexUserDict = new Regex("^(?<word>.+?)(?<freq> [0-9]+)?(?<tag> [a-z]+)?$", RegexOptions.Compiled);
 
+        /// <summary>
+        /// Emoji正则表达式：匹配常见emoji范围
+        /// 包括：表情符号、各种符号、旗帜等
+        /// 使用代理对范围匹配
+        /// </summary>
+        internal static readonly Regex RegexEmoji = new Regex(
+            @"[\uD83C-\uDBFF][\uDC00-\uDFFF]|" +
+            @"[\u2600-\u27BF]|" +
+            @"[\uFE00-\uFE0F]",
+            RegexOptions.Compiled);
+
         #endregion
 
         public JiebaSegmenter()
@@ -371,9 +382,12 @@ namespace JiebaNet.Segmenter
                         }
                         else if (!cutAll)
                         {
-                            foreach (var ch in x)
+                            // 使用RuneHelper正确处理emoji和代理对
+                            // 避免将emoji拆分成代理对
+                            var runes = RuneHelper.SplitToRunes(x);
+                            foreach (var rune in runes)
                             {
-                                result.Add(ch.ToString());
+                                result.Add(rune);
                             }
                         }
                         else
