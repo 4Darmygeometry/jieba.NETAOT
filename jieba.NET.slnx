@@ -1,0 +1,12 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="src/Analyser/Analyser.csproj" />
+  <Project Path="src/Segmenter.Cli/Segmenter.Cli.csproj" />
+  <Project Path="src/Segmenter/Segmenter.csproj" />
+  <Project Path="test/Segmenter.Tests/Segmenter.Tests.csproj" />
+  <Project Path="test/AotTest/AotTest.csproj" />
+</Solution>
