@@ -26,15 +26,28 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
+      - name: Extract version from tag or use default
+        id: get_version
+        shell: bash
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            # 从 csproj 提取默认版本
+            VERSION=$(grep -oP '<Version>\K[^<]+' src/jieba.NETAOT/jieba.NETAOT.csproj || echo "1.0.0")
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
       - name: Build all projects
         run: |
-          dotnet build src/Segmenter/Segmenter.csproj -c Release
-          dotnet build src/Analyser/Analyser.csproj -c Release
-          dotnet build src/jieba.NETAOT/jieba.NETAOT.csproj -c Release
-          dotnet build src/Segmenter.Cli/Segmenter.Cli.csproj -c Release
-          dotnet build test/AotTest/AotTest.csproj -c Release
-          dotnet build test/Segmenter.Tests/Segmenter.Tests.csproj -c Release
-          dotnet build test/NetFrameworkTest/NetFrameworkTest.csproj -c Release
+          dotnet build src/Segmenter/Segmenter.csproj -c Release -p:Version=${{ steps.get_version.outputs.VERSION }}
+          dotnet build src/Analyser/Analyser.csproj -c Release -p:Version=${{ steps.get_version.outputs.VERSION }}
+          dotnet build src/jieba.NETAOT/jieba.NETAOT.csproj -c Release -p:Version=${{ steps.get_version.outputs.VERSION }}
+          dotnet build src/Segmenter.Cli/Segmenter.Cli.csproj -c Release -p:Version=${{ steps.get_version.outputs.VERSION }}
+          dotnet build test/AotTest/AotTest.csproj -c Release -p:Version=${{ steps.get_version.outputs.VERSION }}
+          dotnet build test/Segmenter.Tests/Segmenter.Tests.csproj -c Release -p:Version=${{ steps.get_version.outputs.VERSION }}
+          dotnet build test/NetFrameworkTest/NetFrameworkTest.csproj -c Release -p:Version=${{ steps.get_version.outputs.VERSION }}
 
       - name: Run tests
         run: dotnet test test/Segmenter.Tests/Segmenter.Tests.csproj -c Release -v normal
@@ -48,15 +61,9 @@ jobs:
       - name: Run .NET Framework 4.8 test
         run: test/NetFrameworkTest/bin/Release/net48/JiebaNet.NetFrameworkTest.exe
 
-      - name: Extract version from tag
-        if: startsWith(github.ref, 'refs/tags/v')
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-        shell: bash
-
       - name: Pack jieba.NETAOT
         if: startsWith(github.ref, 'refs/tags/v')
-        run: dotnet pack src/jieba.NETAOT/jieba.NETAOT.csproj -c Release -p:PackageVersion=${{ steps.get_version.outputs.VERSION }} --output ./artifacts
+        run: dotnet pack src/jieba.NETAOT/jieba.NETAOT.csproj -c Release -p:Version=${{ steps.get_version.outputs.VERSION }} --output ./artifacts
 
       - name: Publish to NuGet.org
         if: startsWith(github.ref, 'refs/tags/v')
