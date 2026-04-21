@@ -7,6 +7,8 @@
   <Project Path="src/Analyser/Analyser.csproj" />
   <Project Path="src/Segmenter.Cli/Segmenter.Cli.csproj" />
   <Project Path="src/Segmenter/Segmenter.csproj" />
+  <Project Path="src/jieba.NETAOT/jieba.NETAOT.csproj" />
   <Project Path="test/Segmenter.Tests/Segmenter.Tests.csproj" />
   <Project Path="test/AotTest/AotTest.csproj" />
+  <Project Path="test/NetFrameworkTest/NetFrameworkTest.csproj" />
 </Solution>
