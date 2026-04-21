@@ -1,9 +1,10 @@
+using JiebaNet.Analyser;
+using JiebaNet.Segmenter;
+using JiebaNet.Segmenter.PosSeg;
 using System;
 using System.Diagnostics;
 using System.Linq;
-using JiebaNet.Segmenter;
-using JiebaNet.Segmenter.PosSeg;
-using JiebaNet.Analyser;
+using System.Text;
 
 namespace JiebaNet.AotTest;
 
@@ -12,6 +13,8 @@ class Program
     static int Main(string[] args)
     {
         var allPassed = true;
+
+        Console.OutputEncoding = Encoding.UTF8;
 
         Console.WriteLine("=== jieba.NET AOT 兼容性测试 ===");
         Console.WriteLine();
