@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
+using JiebaNet.Segmenter;
 
 namespace JiebaNet.Analyser
 {
@@ -23,6 +24,17 @@ namespace JiebaNet.Analyser
             {
                 var lines = File.ReadAllLines(path);
                 foreach (var line in lines)
+                {
+                    StopWords.Add(line.Trim());
+                }
+            }
+
+            // 同时加载繁体中文停用词
+            var stopWordsHantPath = ConfigManager.StopWordsHantFile;
+            if (File.Exists(stopWordsHantPath))
+            {
+                var linesHant = File.ReadAllLines(stopWordsHantPath);
+                foreach (var line in linesHant)
                 {
                     StopWords.Add(line.Trim());
                 }
