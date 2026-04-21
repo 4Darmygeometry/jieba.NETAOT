@@ -48,11 +48,11 @@ namespace JiebaNet.Segmenter.Common
             if (string.IsNullOrEmpty(text))
                 return 0;
 
-#if NETSTANDARD2_0 || NET48
+#if NET48
             // 对于旧框架，使用StringInfo计算
             return new System.Globalization.StringInfo(text).LengthInTextElements;
 #else
-            // .NET Core 3.0+ 使用EnumerateRunes计算
+            // .NET Standard 2.1+ 和 .NET Core 3.0+ 使用EnumerateRunes计算
             var count = 0;
             foreach (var _ in text.EnumerateRunes())
             {
@@ -70,11 +70,11 @@ namespace JiebaNet.Segmenter.Common
             if (text.IsEmpty)
                 return 0;
 
-#if NETSTANDARD2_0 || NET48
+#if NET48
             // 对于旧框架，使用StringInfo计算
             return new System.Globalization.StringInfo(text.ToString()).LengthInTextElements;
 #else
-            // .NET Core 3.0+ 使用EnumerateRunes计算
+            // .NET Standard 2.1+ 和 .NET Core 3.0+ 使用EnumerateRunes计算
             var count = 0;
             foreach (var _ in text.EnumerateRunes())
             {
@@ -94,7 +94,7 @@ namespace JiebaNet.Segmenter.Common
             if (string.IsNullOrEmpty(text))
                 return result;
 
-#if NETSTANDARD2_0 || NET48
+#if NET48
             // 对于旧框架，手动处理代理对
             var i = 0;
             while (i < text.Length)
@@ -119,7 +119,7 @@ namespace JiebaNet.Segmenter.Common
                 }
             }
 #else
-            // .NET Core 3.0+ 使用Rune进行高效处理
+            // .NET Standard 2.1+ 和 .NET Core 3.0+ 使用Rune进行高效处理
             foreach (var rune in text.EnumerateRunes())
             {
                 if (rune != Rune.ReplacementChar)
@@ -146,7 +146,7 @@ namespace JiebaNet.Segmenter.Common
             if (text.IsEmpty)
                 return result;
 
-#if NETSTANDARD2_0 || NET48
+#if NET48
             // 对于旧框架，手动处理代理对
             var i = 0;
             while (i < text.Length)
@@ -171,7 +171,7 @@ namespace JiebaNet.Segmenter.Common
                 }
             }
 #else
-            // .NET Core 3.0+ 使用Rune进行高效处理
+            // .NET Standard 2.1+ 和 .NET Core 3.0+ 使用Rune进行高效处理
             foreach (var rune in text.EnumerateRunes())
             {
                 if (rune != Rune.ReplacementChar)
@@ -258,7 +258,7 @@ namespace JiebaNet.Segmenter.Common
                 return -1;
             }
 
-#if NETSTANDARD2_0 || NET48
+#if NET48
             // 对于旧框架，手动处理
             if (char.IsHighSurrogate(text[index]) && index + 1 < text.Length && char.IsLowSurrogate(text[index + 1]))
             {
@@ -276,7 +276,7 @@ namespace JiebaNet.Segmenter.Common
                 return 1;
             }
 #else
-            // .NET Core 3.0+ 使用内置方法
+            // .NET Standard 2.1+ 和 .NET Core 3.0+ 使用内置方法
             if (Rune.TryGetRuneAt(text, index, out rune))
             {
                 return rune.IsBmp ? 1 : 2;

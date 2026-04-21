@@ -82,8 +82,8 @@ namespace JiebaNet.Segmenter.Common
         /// </summary>
         public static int GetSpanHashCode(this ReadOnlySpan<char> span)
         {
-#if NETSTANDARD2_0 || NET48
-            // 对于旧框架，使用简单的哈希算法
+#if NET48 || NETSTANDARD2_1
+            // 对于旧框架和.NET Standard 2.1，使用简单的哈希算法
             unchecked
             {
                 int hash = 17;
@@ -94,6 +94,7 @@ namespace JiebaNet.Segmenter.Common
                 return hash;
             }
 #else
+            // .NET 5+ 使用内置方法
             return string.GetHashCode(span);
 #endif
         }
