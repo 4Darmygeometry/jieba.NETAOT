@@ -1,6 +1,8 @@
 ```
 .\src\Segmenter\Common\JsonHelper.cs
 .\src\Segmenter\Common\RuneHelper.cs
+.\src\Segmenter\Common\SpanExtensions.cs
+.\src\Segmenter\Common\GraphemeClusterHelper.cs
 .\src\Segmenter\FinalSeg\Viterbi.cs
 .\src\Segmenter\PosSeg\Viterbi.cs
 .\src\Segmenter\ConfigManager.cs
