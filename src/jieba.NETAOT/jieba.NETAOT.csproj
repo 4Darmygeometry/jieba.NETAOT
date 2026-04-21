@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;netstandard2.0;net48</TargetFrameworks>
+    <RootNamespace>JiebaNet.Segmenter</RootNamespace>
+    <Version>1.0.0</Version>
+    <Description>jieba.NETAOT - AOT-friendly Chinese text segmentation library with emoji support. 支持AOT编译、emoji分词、繁体中文的结巴分词.NET库。</Description>
+    <Company>4Darmygeometry</Company>
+    <Authors>andersc;4Darmygeometry</Authors>
+    <Copyright>Copyright © andersc, 4Darmygeometry 2026</Copyright>
+    <RepositoryUrl>https://github.com/4Darmygeometry/jieba.NETAOT/</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>chinese;nlp;segmentation;jieba;aot;emoji;traditional-chinese</PackageTags>
+    <PackageId>jieba.NETAOT</PackageId>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <NuspecFile>jieba.NETAOT.nuspec</NuspecFile>
+    <NuspecProperties>Configuration=$(Configuration)</NuspecProperties>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Segmenter\Segmenter.csproj" PrivateAssets="All" />
+    <ProjectReference Include="..\Analyser\Analyser.csproj" PrivateAssets="All" />
+  </ItemGroup>
+
+</Project>

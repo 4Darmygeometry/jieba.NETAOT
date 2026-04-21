@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>jieba.NETAOT</id>
+    <version>$version$</version>
+    <title>jieba.NETAOT - AOT-friendly Chinese Text Segmenter</title>
+    <authors>andersc;4Darmygeometry</authors>
+    <owners>4Darmygeometry</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <projectUrl>https://github.com/4Darmygeometry/jieba.NETAOT/</projectUrl>
+    <description>jieba.NETAOT - AOT-friendly Chinese text segmentation library with emoji support. 支持AOT编译、emoji分词、繁体中文的结巴分词.NET库。jieba.NET支持多种分词模式，适用于不同的应用场景；可以对繁体中文分词；还可以添加自定义词典以改善特定场景下的分词。jieba.NET提供了TF-IDF和TextRank两种关键词提取算法。</description>
+    <summary>jieba.NETAOT is an AOT-friendly port of jieba.NET Chinese text segmenter with emoji support. jieba.NETAOT是支持AOT编译和emoji分词的jieba.NET分支。</summary>
+    <releaseNotes>1. 支持AOT编译；2. 支持emoji分词；3. 支持繁体中文分词；4. 使用System.Text.Json替代Newtonsoft.Json</releaseNotes>
+    <tags>NLP, TextSegmentation, WordSegmentation, AOT, Emoji, TraditionalChinese</tags>
+    <dependencies>
+      <group targetFramework=".NETFramework4.8">
+        <dependency id="System.Text.Json" version="10.0.6" />
+        <dependency id="Shim.System.Text.Rune" version="6.0.2" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="System.Text.Json" version="10.0.6" />
+        <dependency id="Shim.System.Text.Rune" version="6.0.2" />
+      </group>
+      <group targetFramework="net10.0" />
+    </dependencies>
+    <contentFiles>
+      <files include="**\*" buildAction="None" copyToOutput="true" />
+    </contentFiles>
+  </metadata>
+  <files>
+    <file src="..\Segmenter\bin\Release\net10.0\JiebaNet.Segmenter.dll" target="lib\net10.0\" />
+    <file src="..\Analyser\bin\Release\net10.0\JiebaNet.Analyser.dll" target="lib\net10.0\" />
+    <file src="..\Segmenter\bin\Release\netstandard2.0\JiebaNet.Segmenter.dll" target="lib\netstandard2.0\" />
+    <file src="..\Analyser\bin\Release\netstandard2.0\JiebaNet.Analyser.dll" target="lib\netstandard2.0\" />
+    <file src="..\Segmenter\bin\Release\net48\JiebaNet.Segmenter.dll" target="lib\net48\" />
+    <file src="..\Analyser\bin\Release\net48\JiebaNet.Analyser.dll" target="lib\net48\" />
+    <file src="..\Segmenter\Resources\**\*" target="content\Resources\" />
+    <file src="build\**\*" target="build\" />
+    <file src="buildMultiTargeting\**\*" target="buildMultiTargeting\" />
+  </files>
+</package>
