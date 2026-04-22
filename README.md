@@ -67,6 +67,19 @@ JiebaNet.Segmenter.ConfigManager.ConfigFileBaseDir = @"C:\jiebanet\config";
 * `JiebaSegmenter.Cut`方法接受三个输入参数，text为待分词的字符串；cutAll指定是否采用全模式；hmm指定使用是否使用hmm模型切分未登录词；返回类型为`IEnumerable<string>`
 * `JiebaSegmenter.CutForSearch`方法接受两个输入参数，text为待分词的字符串；hmm指定使用是否使用hmm模型；返回类型为`IEnumerable<string>`
 
+* 另外，jieba.NETAOT支持选择性加载词典，如：
+```c#
+// 仅加载简体中文词库 + 支持表情包处理
+var config = new JiebaConfig(JiebaMode.ZhHans);
+var segmenter = new JiebaSegmenter(config);
+
+// 仅加载繁体中文词库 + 不支持表情包处理
+var config = new JiebaConfig(JiebaMode.ZhHant, EmojiMode.Disabled);
+var segmenter = new JiebaSegmenter(config);
+
+//若 var segmenter = new JiebaSegmenter(); 则为全量加载
+```
+
 代码示例
 
 ```c#
