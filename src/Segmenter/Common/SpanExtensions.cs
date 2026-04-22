@@ -82,7 +82,7 @@ namespace JiebaNet.Segmenter.Common
         /// </summary>
         public static int GetSpanHashCode(this ReadOnlySpan<char> span)
         {
-#if NET48 || NETSTANDARD2_1
+#if NET48 || NETSTANDARD2_0 || NETSTANDARD2_1
             // 对于旧框架和.NET Standard 2.1，使用简单的哈希算法
             unchecked
             {

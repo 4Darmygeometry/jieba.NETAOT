@@ -18,6 +18,12 @@ namespace JiebaNet.Segmenter
 
         private static readonly object locker = new object();
 
+        /// <summary>
+        /// 当前分词器使用的词典实例（支持按配置加载）
+        /// 当使用配置构造时，使用独立实例；否则使用全局单例
+        /// </summary>
+        internal WordDictionary CurrentWordDict { get; }
+
         internal IDictionary<string, string> UserWordTagTab { get; set; }
 
         #region Regular Expressions
@@ -49,6 +55,17 @@ namespace JiebaNet.Segmenter
         public JiebaSegmenter()
         {
             UserWordTagTab = new Dictionary<string, string>();
+            CurrentWordDict = WordDict;
+        }
+
+        /// <summary>
+        /// 使用指定配置创建分词器实例
+        /// </summary>
+        /// <param name="config">分词器配置，控制词典加载模式</param>
+        public JiebaSegmenter(JiebaConfig config)
+        {
+            UserWordTagTab = new Dictionary<string, string>();
+            CurrentWordDict = new WordDictionary(config);
         }
 
         /// <summary>

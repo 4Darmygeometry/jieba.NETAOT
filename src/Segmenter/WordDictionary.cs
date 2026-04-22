@@ -40,6 +40,20 @@ namespace JiebaNet.Segmenter
             Debug.WriteLine("total freq: {0}", Total);
         }
 
+        /// <summary>
+        /// 使用指定配置创建词典实例
+        /// </summary>
+        /// <param name="config">分词器配置，控制加载哪些词库</param>
+        internal WordDictionary(JiebaConfig config)
+        {
+            var effectiveConfig = config.ApplyAutoFallback(ConfigManager.ConfigFileBaseDir);
+            LoadDict(effectiveConfig);
+
+            Debug.WriteLine("{0} words (and their prefixes)", Trie.Count);
+            Debug.WriteLine("total freq: {0}", Total);
+            Debug.WriteLine("加载模式: {0}, 表情包: {1}", effectiveConfig.Mode, effectiveConfig.Emoji);
+        }
+
         public static WordDictionary Instance
         {
             get { return lazy.Value; }
@@ -63,6 +77,45 @@ namespace JiebaNet.Segmenter
 
                 stopWatch.Stop();
                 Debug.WriteLine("词典加载完成，耗时 {0} ms", stopWatch.ElapsedMilliseconds);
+            }
+            catch (IOException e)
+            {
+                Debug.Fail(string.Format("词典加载失败，原因: {0}", e.Message));
+            }
+            catch (FormatException fe)
+            {
+                Debug.Fail(fe.Message);
+            }
+        }
+
+        /// <summary>
+        /// 根据配置加载词典
+        /// </summary>
+        /// <param name="config">分词器配置</param>
+        private void LoadDict(JiebaConfig config)
+        {
+            try
+            {
+                var stopWatch = new Stopwatch();
+                stopWatch.Start();
+
+                if (config.ShouldLoadZhHans)
+                {
+                    LoadDictFile(MainDict, "主词典(简体)");
+                }
+
+                if (config.ShouldLoadZhHant)
+                {
+                    LoadDictFile(MainDictHant, "繁体中文词典");
+                }
+
+                if (config.ShouldLoadEmoji)
+                {
+                    LoadEmojiDictFile(EmojiDict);
+                }
+
+                stopWatch.Stop();
+                Debug.WriteLine("词典加载完成（按配置），耗时 {0} ms", stopWatch.ElapsedMilliseconds);
             }
             catch (IOException e)
             {
