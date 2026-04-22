@@ -14,6 +14,7 @@ jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的
     - 搜索引擎模式，在精确模式的基础上，对长词再次切分，提高召回率，**适合用于搜索引擎分词**。
 * 支持**繁体分词**
 * 支持添加自定义词典和自定义词
+* 支持TF-IDF、TextRank算法关键词提取
 * 支持含Emoji句子断句
 * 支持带变体选择符和ZWJ的复杂emoji断句（甚至支持到Unicode 16的emoji）
 * 可AOT编译
