@@ -20,6 +20,15 @@ namespace JiebaNet.Segmenter
         private static readonly object locker = new object();
 
         /// <summary>
+        /// 时间识别器实例（根据平台自动选择实现）
+        /// 所有框架使用正则识别器
+        /// </summary>
+        private static readonly Lazy<ITimeRecognizer> TimeRecognizer = new Lazy<ITimeRecognizer>(() =>
+        {
+            return new RegexTimeRecognizer();
+        });
+
+        /// <summary>
         /// 当前分词器使用的词典实例（支持按配置加载）
         /// 当使用配置构造时，使用独立实例；否则使用全局单例
         /// </summary>
@@ -112,10 +121,91 @@ namespace JiebaNet.Segmenter
         /// <returns></returns>
         public IEnumerable<string> Cut(string text, bool cutAll = false, bool hmm = true)
         {
-            var reHan = cutAll ? RegexChineseCutAll : RegexChineseDefault;
-            var reSkip = cutAll ? RegexSkipCutAll : RegexSkipDefault;
-            var cutMethod = cutAll ? CutAll : hmm ? CutDag : (Func<string, IEnumerable<string>>)CutDagWithoutHmm;
-            return CutIt(text, cutMethod, reHan, reSkip, cutAll);
+            // 全模式不进行日期时间识别
+            if (cutAll)
+            {
+                var reHan = RegexChineseCutAll;
+                var reSkip = RegexSkipCutAll;
+                return CutIt(text, CutAll, reHan, reSkip, true);
+            }
+
+            // 精确模式：先识别日期时间，再进行分词
+            return CutWithDateTimeRecognition(text, hmm);
+        }
+
+        /// <summary>
+        /// 带日期时间识别的分词方法（仅用于精确模式和搜索引擎模式）
+        /// </summary>
+        /// <param name="text">待分词文本</param>
+        /// <param name="hmm">是否使用HMM</param>
+        /// <returns>分词结果</returns>
+        private IEnumerable<string> CutWithDateTimeRecognition(string text, bool hmm)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return Enumerable.Empty<string>();
+            }
+
+            // 识别日期时间实体
+            var timeEntities = TimeRecognizer.Value.Recognize(text);
+
+            if (timeEntities.Count == 0)
+            {
+                // 没有日期时间实体，使用普通分词
+                var reHan = RegexChineseDefault;
+                var reSkip = RegexSkipDefault;
+                var cutMethod = hmm ? CutDag : (Func<string, IEnumerable<string>>)CutDagWithoutHmm;
+                return CutIt(text, cutMethod, reHan, reSkip, false);
+            }
+
+            // 有日期时间实体，需要保护这些区域不被分词
+            return CutWithProtectedRegions(text, timeEntities, hmm);
+        }
+
+        /// <summary>
+        /// 对文本进行分词，保护指定区域不被分词
+        /// </summary>
+        /// <param name="text">待分词文本</param>
+        /// <param name="protectedRegions">受保护区域（日期时间实体）</param>
+        /// <param name="hmm">是否使用HMM</param>
+        /// <returns>分词结果</returns>
+        private IEnumerable<string> CutWithProtectedRegions(string text, List<TimeEntity> protectedRegions, bool hmm)
+        {
+            var result = new List<string>();
+            var reHan = RegexChineseDefault;
+            var reSkip = RegexSkipDefault;
+            var cutMethod = hmm ? CutDag : (Func<string, IEnumerable<string>>)CutDagWithoutHmm;
+
+            var lastEnd = 0;
+
+            foreach (var entity in protectedRegions)
+            {
+                // 先处理受保护区域之前的文本
+                if (entity.Start > lastEnd)
+                {
+                    var beforeText = text.Substring(lastEnd, entity.Start - lastEnd);
+                    if (!string.IsNullOrEmpty(beforeText))
+                    {
+                        result.AddRange(CutIt(beforeText, cutMethod, reHan, reSkip, false));
+                    }
+                }
+
+                // 添加日期时间实体作为整体
+                result.Add(entity.Text);
+                lastEnd = entity.End;
+            }
+
+            // 处理最后一个受保护区域之后的文本
+            if (lastEnd < text.Length)
+            {
+                var afterText = text.Substring(lastEnd);
+                if (!string.IsNullOrEmpty(afterText))
+                {
+                    result.AddRange(CutIt(afterText, cutMethod, reHan, reSkip, false));
+                }
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -145,11 +235,8 @@ namespace JiebaNet.Segmenter
         
         public IEnumerable<IEnumerable<string>> CutInParallel(IEnumerable<string> texts, bool cutAll = false, bool hmm = true)
         {
-            var reHan = cutAll ? RegexChineseCutAll : RegexChineseDefault;
-            var reSkip = cutAll ? RegexSkipCutAll : RegexSkipDefault;
-            var cutMethod = cutAll ? CutAll : hmm ? CutDag : (Func<string, IEnumerable<string>>)CutDagWithoutHmm;
-
-            return texts.AsParallel().AsOrdered().Select(text => CutIt(text, cutMethod, reHan, reSkip, cutAll));
+            // 使用Cut方法以支持日期时间识别
+            return texts.AsParallel().AsOrdered().Select(text => Cut(text, cutAll, hmm));
         }
         
         public IEnumerable<string> CutInParallel(string text, bool cutAll = false, bool hmm = true)
@@ -162,10 +249,18 @@ namespace JiebaNet.Segmenter
         {
             var result = new List<string>();
 
+            // 搜索引擎模式也进行日期时间识别
+            // 先识别日期时间实体，避免提取日期时间实体的子词
+            var timeEntities = TimeRecognizer.Value.Recognize(text);
             var words = Cut(text, hmm: hmm);
+            
             foreach (var w in words)
             {
-                if (w.Length > 2)
+                // 检查当前词是否是日期时间实体
+                var isTimeEntity = timeEntities.Any(e => e.Text == w);
+                
+                // 只有非日期时间实体才提取子词
+                if (!isTimeEntity && w.Length > 2)
                 {
                     // 使用Span优化，避免重复Substring分配
                     var wSpan = w.AsSpan();
@@ -179,7 +274,7 @@ namespace JiebaNet.Segmenter
                     }
                 }
 
-                if (w.Length > 3)
+                if (!isTimeEntity && w.Length > 3)
                 {
                     var wSpan = w.AsSpan();
                     for (var i = 0; i < w.Length - 2; i++)

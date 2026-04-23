@@ -17,6 +17,14 @@ namespace JiebaNet.Segmenter.PosSeg
         // TODO: 
         private static readonly object locker = new object();
 
+        /// <summary>
+        /// 时间识别器实例（所有框架使用正则识别器）
+        /// </summary>
+        private static readonly Lazy<ITimeRecognizer> TimeRecognizer = new Lazy<ITimeRecognizer>(() =>
+        {
+            return new RegexTimeRecognizer();
+        });
+
         #region Regular Expressions
 
         internal static readonly Regex RegexChineseInternal = new Regex(@"([\u4E00-\u9FD5a-zA-Z0-9+#&\._%·\-]+)", RegexOptions.Compiled);
@@ -113,16 +121,31 @@ namespace JiebaNet.Segmenter.PosSeg
         {
             CheckNewUserWordTags();
 
+            if (string.IsNullOrEmpty(text))
+            {
+                return Enumerable.Empty<Pair>();
+            }
+
+            // 识别日期时间实体
+            var timeEntities = TimeRecognizer.Value.Recognize(text);
+
+            if (timeEntities.Count == 0)
+            {
+                // 没有日期时间实体，使用普通分词
+                return CutWithoutDateTimeRecognition(text, hmm);
+            }
+
+            // 有日期时间实体，需要保护这些区域不被分词
+            return CutWithProtectedRegions(text, timeEntities, hmm);
+        }
+
+        /// <summary>
+        /// 不带日期时间识别的分词方法
+        /// </summary>
+        private IEnumerable<Pair> CutWithoutDateTimeRecognition(string text, bool hmm)
+        {
             var blocks = RegexChineseInternal.Split(text);
-            Func<string, IEnumerable<Pair>> cutMethod = null;
-            if (hmm)
-            {
-                cutMethod = CutDag;
-            }
-            else
-            {
-                cutMethod = CutDagWithoutHmm;
-            }
+            Func<string, IEnumerable<Pair>> cutMethod = hmm ? CutDag : (Func<string, IEnumerable<Pair>>)CutDagWithoutHmm;
 
             var tokens = new List<Pair>();
             foreach (var blk in blocks)
@@ -144,7 +167,6 @@ namespace JiebaNet.Segmenter.PosSeg
                         {
                             foreach (var xx in x)
                             {
-                                // TODO: each char?
                                 var xxs = xx.ToString();
                                 if (RegexNumbers.IsMatch(xxs))
                                 {
@@ -165,6 +187,44 @@ namespace JiebaNet.Segmenter.PosSeg
             }
 
             return tokens;
+        }
+
+        /// <summary>
+        /// 对文本进行分词，保护指定区域不被分词
+        /// </summary>
+        private IEnumerable<Pair> CutWithProtectedRegions(string text, List<TimeEntity> protectedRegions, bool hmm)
+        {
+            var result = new List<Pair>();
+            var lastEnd = 0;
+
+            foreach (var entity in protectedRegions)
+            {
+                // 先处理受保护区域之前的文本
+                if (entity.Start > lastEnd)
+                {
+                    var beforeText = text.Substring(lastEnd, entity.Start - lastEnd);
+                    if (!string.IsNullOrEmpty(beforeText))
+                    {
+                        result.AddRange(CutWithoutDateTimeRecognition(beforeText, hmm));
+                    }
+                }
+
+                // 添加日期时间实体作为整体，词性标记为"t"（时间）
+                result.Add(new Pair(entity.Text, "t"));
+                lastEnd = entity.End;
+            }
+
+            // 处理最后一个受保护区域之后的文本
+            if (lastEnd < text.Length)
+            {
+                var afterText = text.Substring(lastEnd);
+                if (!string.IsNullOrEmpty(afterText))
+                {
+                    result.AddRange(CutWithoutDateTimeRecognition(afterText, hmm));
+                }
+            }
+
+            return result;
         }
 
         internal IEnumerable<Pair> CutDag(string sentence)
