@@ -2,6 +2,7 @@ using JiebaNet.Analyser;
 using JiebaNet.Segmenter;
 using JiebaNet.Segmenter.PosSeg;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -29,6 +30,14 @@ class Program
         allPassed &= TestEmojiSegment();
         allPassed &= TestComplexEmojiSegment();
         allPassed &= TestTraditionalChineseSegment();
+
+#if AOTBA
+        allPassed &= TestLcut();
+        allPassed &= TestLcutForSearch();
+        allPassed &= TestTokenizer();
+        allPassed &= TestJiebaDt();
+        allPassed &= TestTokenizerIndependentDict();
+#endif
 
         Console.WriteLine();
         if (allPassed)
@@ -346,4 +355,136 @@ class Program
             return false;
         }
     }
+
+#if AOTBA
+    static bool TestLcut()
+    {
+        Console.WriteLine("[测试] lcut 直接返回 List<string>...");
+        try
+        {
+            var seg = new JiebaSegmenter();
+            var text = "我来到北京清华大学";
+            var words = seg.Lcut(text);
+            var joined = string.Join("/", words);
+            Console.WriteLine($"  结果: {joined}");
+            if (words is List<string> && words.Contains("清华大学"))
+            {
+                Console.WriteLine("  通过 ✓");
+                return true;
+            }
+            Console.WriteLine("  失败 ✗");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  异常: {ex.Message}");
+            return false;
+        }
+    }
+
+    static bool TestLcutForSearch()
+    {
+        Console.WriteLine("[测试] lcut_for_search 直接返回 List<string>...");
+        try
+        {
+            var seg = new JiebaSegmenter();
+            var text = "小明硕士毕业于中国科学院计算所";
+            var words = seg.LcutForSearch(text);
+            var joined = string.Join("/", words);
+            Console.WriteLine($"  结果: {joined}");
+            if (words is List<string> && words.Contains("中国"))
+            {
+                Console.WriteLine("  通过 ✓");
+                return true;
+            }
+            Console.WriteLine("  失败 ✗");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  异常: {ex.Message}");
+            return false;
+        }
+    }
+
+    static bool TestTokenizer()
+    {
+        Console.WriteLine("[测试] Tokenizer 自定义分词器...");
+        try
+        {
+            var tokenizer = new Tokenizer();
+            var text = "我来到北京清华大学";
+            var words = tokenizer.Lcut(text);
+            var joined = string.Join("/", words);
+            Console.WriteLine($"  结果: {joined}");
+            if (words.Contains("清华大学"))
+            {
+                Console.WriteLine("  通过 ✓");
+                return true;
+            }
+            Console.WriteLine("  失败 ✗");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  异常: {ex.Message}");
+            return false;
+        }
+    }
+
+    static bool TestJiebaDt()
+    {
+        Console.WriteLine("[测试] Jieba.Dt 默认分词器...");
+        try
+        {
+            var text = "我来到北京清华大学";
+            var words = Jieba.Lcut(text);
+            var joined = string.Join("/", words);
+            Console.WriteLine($"  结果: {joined}");
+            if (words.Contains("清华大学"))
+            {
+                Console.WriteLine("  通过 ✓");
+                return true;
+            }
+            Console.WriteLine("  失败 ✗");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  异常: {ex.Message}");
+            return false;
+        }
+    }
+
+    static bool TestTokenizerIndependentDict()
+    {
+        Console.WriteLine("[测试] Tokenizer 独立词典...");
+        try
+        {
+            var tokenizer1 = new Tokenizer();
+            var tokenizer2 = new Tokenizer();
+            var text = "小明最近在学习机器学习";
+
+            tokenizer1.AddWord("机器学习");
+            var words1 = tokenizer1.Lcut(text);
+            var words2 = tokenizer2.Lcut(text);
+
+            Console.WriteLine($"  tokenizer1: {string.Join("/", words1)}");
+            Console.WriteLine($"  tokenizer2: {string.Join("/", words2)}");
+
+            if (words1.Contains("机器学习") && !words2.Contains("机器学习"))
+            {
+                Console.WriteLine("  通过 ✓");
+                return true;
+            }
+            Console.WriteLine("  失败 ✗");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  异常: {ex.Message}");
+            return false;
+        }
+    }
+#endif
 }
