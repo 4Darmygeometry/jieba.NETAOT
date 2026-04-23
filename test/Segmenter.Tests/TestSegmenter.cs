@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using JiebaNet.Segmenter.Common;
+using JiebaNet.Segmenter.PosSeg;
 using NUnit.Framework;
 using NUnit.Framework.Legacy;
 
@@ -593,6 +594,509 @@ namespace JiebaNet.Segmenter.Tests
             Assert.IsInstanceOf<List<string>>(words);
             Assert.That(words, Contains.Item("清华大学"));
             Console.WriteLine(string.Join("/", words));
+        }
+
+        #endregion
+        #region 日期时间识别测试
+
+        /// <summary>
+        /// 测试时间格式 4:50（Issue #1）
+        /// </summary>
+        [TestCase]
+        [Category("Issue")]
+        public void TestDateTime_Issue1_TimeFormat()
+        {
+            var seg = new JiebaSegmenter();
+            var text = "今天4:50某某某领了一只记号笔";
+            var result = seg.Cut(text).ToList();
+            Console.WriteLine(string.Join("/", result));
+            Assert.That(result, Contains.Item("今天4:50"), "'今天4:50'应被识别为整体时间");
+        }
+
+        /// <summary>
+        /// 测试ISO日期时间格式（Issue #2）
+        /// </summary>
+        [TestCase]
+        [Category("Issue")]
+        public void TestDateTime_Issue2_IsoDateTime()
+        {
+            var seg = new JiebaSegmenter();
+            var text = "会议时间是2021-01-01 09:00:00";
+            var result = seg.Cut(text).ToList();
+            Console.WriteLine(string.Join("/", result));
+            Assert.That(result.Any(w => w.Contains("2021-01-01")), "ISO日期时间应被识别");
+        }
+
+        /// <summary>
+        /// 测试中文日期格式（DateChineseRegex）
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_ChineseDate()
+        {
+            var seg = new JiebaSegmenter();
+            var text = "2021年1月1日是元旦";
+            var result = seg.Cut(text).ToList();
+            Console.WriteLine(string.Join("/", result));
+            Assert.That(result, Contains.Item("2021年1月1日"), "中文日期应被识别");
+        }
+
+        /// <summary>
+        /// 测试节日识别（FestivalRegex）
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_Festival()
+        {
+            var seg = new JiebaSegmenter();
+            var text = "春节是中国的传统节日";
+            var result = seg.Cut(text).ToList();
+            Console.WriteLine(string.Join("/", result));
+            Assert.That(result, Contains.Item("春节"), "节日应被识别");
+        }
+
+        /// <summary>
+        /// 测试相对时间（RelativeRegex）—— "明天下午3点"应为整体
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_RelativeTime()
+        {
+            var seg = new JiebaSegmenter();
+            var text = "明天下午3点开会";
+            var result = seg.Cut(text).ToList();
+            Console.WriteLine(string.Join("/", result));
+            Assert.That(result, Contains.Item("明天下午3点"), "'明天下午3点'应被识别为整体时间");
+        }
+
+        /// <summary>
+        /// 测试搜索引擎模式日期时间识别
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_SearchMode()
+        {
+            var seg = new JiebaSegmenter();
+            var text = "今天4:50某某某领了一只记号笔";
+            var result = seg.CutForSearch(text).ToList();
+            Console.WriteLine(string.Join("/", result));
+            // 搜索引擎模式也进行日期时间识别，"今天4:50"作为整体
+            Assert.That(result.Contains("今天4:50"), "搜索引擎模式应识别时间");
+        }
+
+        /// <summary>
+        /// 测试词性标注中的日期时间识别
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_PosSegment()
+        {
+            var posSeg = new PosSegmenter();
+            var text = "今天4:50某某某领了一只记号笔";
+            var result = posSeg.Cut(text).ToList();
+            Console.WriteLine(string.Join("/", result));
+            Assert.That(result.Any(p => p.Word == "今天4:50" && p.Flag == "t"), "'今天4:50'应被标记为时间词性");
+        }
+
+        /// <summary>
+        /// 测试中文时间表达（TimeRegex格式2）
+        /// 上午9点、下午3点半、晚上8点30分、凌晨2点
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_ChineseTimeExpressions()
+        {
+            var seg = new JiebaSegmenter();
+
+            var testCases = new (string text, string expected)[]
+            {
+                ("上午9点开会", "上午9点"),
+                ("下午3点半", "下午3点半"),
+                ("晚上8点30分", "晚上8点30分"),
+                ("凌晨2点", "凌晨2点"),
+            };
+
+            foreach (var (text, expected) in testCases)
+            {
+                var result = seg.Cut(text).ToList();
+                var joined = string.Join("/", result);
+                Console.WriteLine($"{text} -> {joined}");
+                Assert.That(result, Contains.Item(expected), $"'{expected}'应被识别为整体时间");
+            }
+        }
+
+        /// <summary>
+        /// 测试数字时间格式（TimeRegex格式1）
+        /// 14:30:00, 4:50
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_NumericTimeFormat()
+        {
+            var seg = new JiebaSegmenter();
+
+            var testCases = new (string text, string expected)[]
+            {
+                ("14:30:00", "14:30:00"),
+                ("4:50", "4:50"),
+                ("23:59", "23:59"),
+            };
+
+            foreach (var (text, expected) in testCases)
+            {
+                var result = seg.Cut(text).ToList();
+                var joined = string.Join("/", result);
+                Console.WriteLine($"{text} -> {joined}");
+                Assert.That(result, Contains.Item(expected), $"'{expected}'应被识别为时间");
+            }
+        }
+
+        /// <summary>
+        /// 测试ISO日期格式（DateTimeIsoRegex）
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_IsoDate()
+        {
+            var seg = new JiebaSegmenter();
+
+            var testCases = new (string text, string expected)[]
+            {
+                ("2024-12-25", "2024-12-25"),
+                ("2024/12/25", "2024/12/25"),
+            };
+
+            foreach (var (text, expected) in testCases)
+            {
+                var result = seg.Cut(text).ToList();
+                var joined = string.Join("/", result);
+                Console.WriteLine($"{text} -> {joined}");
+                Assert.That(result, Contains.Item(expected), $"'{expected}'应被识别为日期");
+            }
+        }
+
+        /// <summary>
+        /// 测试中文日期（DateChineseRegex）—— 12月25日
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_ChineseDateShort()
+        {
+            var seg = new JiebaSegmenter();
+            var text = "12月25日";
+            var result = seg.Cut(text).ToList();
+            Console.WriteLine($"12月25日 -> {string.Join("/", result)}");
+            Assert.That(result, Contains.Item("12月25日"), "'12月25日'应被识别为日期");
+        }
+
+        /// <summary>
+        /// 测试节日识别（FestivalRegex）—— 多种节日
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_Festivals()
+        {
+            var seg = new JiebaSegmenter();
+
+            var testCases = new (string text, string expected)[]
+            {
+                ("国庆节快乐", "国庆节"),
+                ("中秋节团圆", "中秋节"),
+                ("元旦放假", "元旦"),
+                ("情人节快乐", "情人节"),
+                ("端午节吃粽子", "端午节"),
+            };
+
+            foreach (var (text, expected) in testCases)
+            {
+                var result = seg.Cut(text).ToList();
+                var joined = string.Join("/", result);
+                Console.WriteLine($"{text} -> {joined}");
+                Assert.That(result, Contains.Item(expected), $"'{expected}'应被识别为节日");
+            }
+        }
+
+        /// <summary>
+        /// 测试节气识别（SolarTermRegex）
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_SolarTerms()
+        {
+            var seg = new JiebaSegmenter();
+
+            var testCases = new (string text, string expected)[]
+            {
+                ("立春到了", "立春"),
+                ("清明时节雨纷纷", "清明"),
+                ("冬至吃饺子", "冬至"),
+                ("芒种忙种", "芒种"),
+            };
+
+            foreach (var (text, expected) in testCases)
+            {
+                var result = seg.Cut(text).ToList();
+                var joined = string.Join("/", result);
+                Console.WriteLine($"{text} -> {joined}");
+                Assert.That(result, Contains.Item(expected), $"'{expected}'应被识别为节气");
+            }
+        }
+
+        /// <summary>
+        /// 测试农历识别（LunarRegex）
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_LunarDate()
+        {
+            var seg = new JiebaSegmenter();
+
+            var testCases = new (string text, string expected)[]
+            {
+                ("腊月初八是腊八节", "腊月初八"),
+                ("正月初一过年", "正月初一"),
+            };
+
+            foreach (var (text, expected) in testCases)
+            {
+                var result = seg.Cut(text).ToList();
+                var joined = string.Join("/", result);
+                Console.WriteLine($"{text} -> {joined}");
+                Assert.That(result, Contains.Item(expected), $"'{expected}'应被识别为农历日期");
+            }
+        }
+
+        /// <summary>
+        /// 测试天干地支+生肖（TraditionalRegex）
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_Traditional()
+        {
+            var seg = new JiebaSegmenter();
+
+            var testCases = new (string text, string expected)[]
+            {
+                ("甲子时", "甲子时"),
+                ("属龙的人", "属龙"),
+            };
+
+            foreach (var (text, expected) in testCases)
+            {
+                var result = seg.Cut(text).ToList();
+                var joined = string.Join("/", result);
+                Console.WriteLine($"{text} -> {joined}");
+                Assert.That(result, Contains.Item(expected), $"'{expected}'应被识别为天干地支/生肖");
+            }
+        }
+
+        /// <summary>
+        /// 测试朝代识别（DynastyRegex）—— 确保朝代正常识别且不误匹配"明天"
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_Dynasty()
+        {
+            var seg = new JiebaSegmenter();
+
+            var testCases = new (string text, string expected)[]
+            {
+                ("唐朝盛世", "唐朝"),
+                ("明朝灭亡", "明朝"),
+                ("宋朝文化", "宋朝"),
+            };
+
+            foreach (var (text, expected) in testCases)
+            {
+                var result = seg.Cut(text).ToList();
+                var joined = string.Join("/", result);
+                Console.WriteLine($"{text} -> {joined}");
+                Assert.That(result, Contains.Item(expected), $"'{expected}'应被识别为朝代");
+            }
+        }
+
+        /// <summary>
+        /// 测试朝代不误匹配"明天"、"明年"等
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_DynastyNotFalsePositive()
+        {
+            var seg = new JiebaSegmenter();
+            var text = "明天下午3点开会";
+            var result = seg.Cut(text).ToList();
+            Console.WriteLine($"{text} -> {string.Join("/", result)}");
+            Assert.That(result, Contains.Item("明天下午3点"), "'明天下午3点'应被识别为整体时间，'明'不应被误识别为朝代");
+        }
+
+        /// <summary>
+        /// 测试相对时间组合（RelativeRegex）
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_RelativeTimeCombinations()
+        {
+            var seg = new JiebaSegmenter();
+
+            var testCases = new (string text, string expected)[]
+            {
+                ("昨天上午9点出发", "昨天上午9点"),
+                ("后天下午2点", "后天下午2点"),
+                ("今天晚上8点", "今天晚上8点"),
+            };
+
+            foreach (var (text, expected) in testCases)
+            {
+                var result = seg.Cut(text).ToList();
+                var joined = string.Join("/", result);
+                Console.WriteLine($"{text} -> {joined}");
+                Assert.That(result, Contains.Item(expected), $"'{expected}'应被识别为整体相对时间");
+            }
+        }
+
+        /// <summary>
+        /// 测试持续时间（DurationRegex）
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_Duration()
+        {
+            var seg = new JiebaSegmenter();
+
+            var testCases = new (string text, string expected)[]
+            {
+                ("3个小时", "3个小时"),
+                ("5分钟", "5分钟"),
+                ("2天", "2天"),
+                ("十周", "十周"),
+                ("三周", "三周"),
+            };
+
+            foreach (var (text, expected) in testCases)
+            {
+                var result = seg.Cut(text).ToList();
+                var joined = string.Join("/", result);
+                Console.WriteLine($"{text} -> {joined}");
+                Assert.That(result, Contains.Item(expected), $"'{expected}'应被识别为持续时间");
+            }
+        }
+
+        /// <summary>
+        /// 测试时间范围（RangeRegex）
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_TimeRange()
+        {
+            var seg = new JiebaSegmenter();
+            var text = "9:00到17:00上班";
+            var result = seg.Cut(text).ToList();
+            var joined = string.Join("/", result);
+            Console.WriteLine($"{text} -> {joined}");
+            Assert.That(result.Any(w => w.Contains("9:00") && w.Contains("17:00")), "时间范围应被识别");
+        }
+
+        /// <summary>
+        /// 测试截止时间（DeadlineRegex）
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_Deadline()
+        {
+            var seg = new JiebaSegmenter();
+            var text = "截止2024-12-31提交";
+            var result = seg.Cut(text).ToList();
+            var joined = string.Join("/", result);
+            Console.WriteLine($"{text} -> {joined}");
+            Assert.That(result.Any(w => w.Contains("截止") || w.Contains("2024-12-31")), "截止时间应被识别");
+        }
+
+        /// <summary>
+        /// 测试季度（QuarterRegex）
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_Quarter()
+        {
+            var seg = new JiebaSegmenter();
+
+            var testCases = new (string text, string expected)[]
+            {
+                ("2024年第一季度", "2024年第一季度"),
+                ("2024年Q1", "2024年Q1"),
+                ("Q3财报", "Q3"),
+            };
+
+            foreach (var (text, expected) in testCases)
+            {
+                var result = seg.Cut(text).ToList();
+                var joined = string.Join("/", result);
+                Console.WriteLine($"{text} -> {joined}");
+                Assert.That(result.Any(w => w.Contains(expected)), $"'{expected}'应被识别为季度");
+            }
+        }
+
+        /// <summary>
+        /// 测试星期（WeekdayRegex）
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_Weekday()
+        {
+            var seg = new JiebaSegmenter();
+
+            var testCases = new (string text, string expected)[]
+            {
+                ("星期一开会", "星期一"),
+                ("周三见", "周三"),
+            };
+
+            foreach (var (text, expected) in testCases)
+            {
+                var result = seg.Cut(text).ToList();
+                var joined = string.Join("/", result);
+                Console.WriteLine($"{text} -> {joined}");
+                Assert.That(result, Contains.Item(expected), $"'{expected}'应被识别为星期");
+            }
+        }
+
+        /// <summary>
+        /// 测试时区（TimezoneRegex）
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_Timezone()
+        {
+            var seg = new JiebaSegmenter();
+            var text = "UTC+8北京时间";
+            var result = seg.Cut(text).ToList();
+            var joined = string.Join("/", result);
+            Console.WriteLine($"{text} -> {joined}");
+            Assert.That(result.Any(w => w.Contains("UTC")), "UTC时区应被识别");
+            Assert.That(result.Any(w => w.Contains("北京时间")), "'北京时间'应被识别为完整时区");
+        }
+
+        /// <summary>
+        /// 测试纪念日（AnniversaryRegex）
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_Anniversary()
+        {
+            var seg = new JiebaSegmenter();
+
+            var testCases = new (string text, string expected)[]
+            {
+                ("十周年纪念", "十周年"),
+            };
+
+            foreach (var (text, expected) in testCases)
+            {
+                var result = seg.Cut(text).ToList();
+                var joined = string.Join("/", result);
+                Console.WriteLine($"{text} -> {joined}");
+                Assert.That(result.Any(w => w.Contains(expected)), $"'{expected}'应被识别为纪念日");
+            }
+        }
+
+        /// <summary>
+        /// 测试模糊时间（FuzzyRegex）
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_Fuzzy()
+        {
+            var seg = new JiebaSegmenter();
+
+            var testCases = new (string text, string expected)[]
+            {
+                ("上旬开会", "上旬"),
+                ("月底截止", "月底"),
+            };
+
+            foreach (var (text, expected) in testCases)
+            {
+                var result = seg.Cut(text).ToList();
+                var joined = string.Join("/", result);
+                Console.WriteLine($"{text} -> {joined}");
+                Assert.That(result, Contains.Item(expected), $"'{expected}'应被识别为模糊时间");
+            }
         }
 
         #endregion
