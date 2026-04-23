@@ -32,7 +32,7 @@ namespace JiebaNet.Segmenter.PosSeg
 
         #endregion
 
-        private static IDictionary<string, string> _wordTagTab;
+        private static IDictionary<string, string> _wordTagTab = null!;
 
         static PosSegmenter()
         {

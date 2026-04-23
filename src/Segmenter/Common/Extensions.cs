@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -12,12 +12,12 @@ namespace JiebaNet.Segmenter.Common
 
         #region Objects
 
-        public static bool IsNull(this object obj)
+        public static bool IsNull(this object? obj)
         {
             return obj == null;
         }
 
-        public static bool IsNotNull(this object obj)
+        public static bool IsNotNull(this object? obj)
         {
             return obj != null;
         }
@@ -27,12 +27,12 @@ namespace JiebaNet.Segmenter.Common
 
         #region Enumerable
 
-        public static bool IsEmpty<T>(this IEnumerable<T> enumerable)
+        public static bool IsEmpty<T>(this IEnumerable<T>? enumerable)
         {
             return (enumerable == null) || !enumerable.Any();
         }
 
-        public static bool IsNotEmpty<T>(this IEnumerable<T> enumerable)
+        public static bool IsNotEmpty<T>(this IEnumerable<T>? enumerable)
         {
             return (enumerable != null) && enumerable.Any();
         }

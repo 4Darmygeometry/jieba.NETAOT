@@ -10,10 +10,10 @@ namespace JiebaNet.Segmenter.PosSeg
     {
         private static readonly Lazy<Viterbi> Lazy = new Lazy<Viterbi>(() => new Viterbi());
 
-        private static IDictionary<string, double> _startProbs;
-        private static IDictionary<string, IDictionary<string, double>> _transProbs;
-        private static IDictionary<string, IDictionary<char, double>> _emitProbs;
-        private static IDictionary<char, List<string>> _stateTab;
+        private static IDictionary<string, double> _startProbs = null!;
+        private static IDictionary<string, IDictionary<string, double>> _transProbs = null!;
+        private static IDictionary<string, IDictionary<char, double>> _emitProbs = null!;
+        private static IDictionary<char, List<string>> _stateTab = null!;
 
         private Viterbi()
         {

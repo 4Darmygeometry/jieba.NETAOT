@@ -41,7 +41,7 @@ namespace JiebaNet.Segmenter
         }
 
         /// <summary>
-        /// 使用指定配置创建分词器
+        /// 使用指定配置创建分词器实例（独立词典，不缓存）
         /// 等价于原版jieba的Tokenizer(dictionary=custom_dict)
         /// 每个实例拥有独立的词典，互不影响
         /// </summary>
@@ -49,8 +49,9 @@ namespace JiebaNet.Segmenter
         public Tokenizer(JiebaConfig config)
         {
             UserWordTagTab = new Dictionary<string, string>();
-            CurrentWordDict = new WordDictionary(config);
-            _segmenter = new JiebaSegmenter(config);
+            // 使用独立词典，不缓存，确保每个Tokenizer实例互不影响
+            CurrentWordDict = WordDictionary.CreateIndependent(config);
+            _segmenter = new JiebaSegmenter(CurrentWordDict);
         }
 
         /// <summary>

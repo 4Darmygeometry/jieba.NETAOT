@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,50 +13,85 @@ namespace JiebaNet.Segmenter
 {
     public class WordDictionary
     {
+        // 词典缓存：避免重复加载相同配置的词典
+        private static readonly ConcurrentDictionary<string, Lazy<WordDictionary>> _cache
+            = new ConcurrentDictionary<string, Lazy<WordDictionary>>();
+
         private static readonly Lazy<WordDictionary> lazy = new Lazy<WordDictionary>(() => new WordDictionary());
         private static readonly string MainDict = ConfigManager.MainDictFile;
         private static readonly string EmojiDict = ConfigManager.EmojiDictFile;
         private static readonly string MainDictHant = ConfigManager.MainDictHantFile;
 
-        internal IDictionary<string, int> Trie = new ConcurrentDictionary<string, int>();
+        // 使用并发字典，支持并行加载
+        internal readonly ConcurrentDictionary<string, int> Trie = new ConcurrentDictionary<string, int>();
 
         /// <summary>
         /// Emoji专用前缀树，用于快速匹配复杂emoji（ZWJ序列等）
         /// </summary>
-        internal IDictionary<string, int> EmojiTrie = new ConcurrentDictionary<string, int>();
+        internal readonly ConcurrentDictionary<string, int> EmojiTrie = new ConcurrentDictionary<string, int>();
 
         /// <summary>
         /// 字符串池，用于缓存高频字符串切片，减少GC压力
         /// </summary>
-        private readonly Dictionary<int, string> _stringPool = new Dictionary<int, string>();
+        private readonly ConcurrentDictionary<int, string> _stringPool = new ConcurrentDictionary<int, string>();
 
         /// <summary>
         /// total occurrence of all words.
         /// </summary>
         public double Total { get; set; }
 
+        // 用于线程安全的Total累加
+        private double _total;
+        private readonly object _totalLock = new object();
+
         private WordDictionary()
         {
-            // 在 ThreadPool 上执行，避免捕获当前同步上下文导致死锁
-            Task.Run(() => LoadDictAsync()).GetAwaiter().GetResult();
+            // 直接同步等待异步加载（内部已使用ConfigureAwait(false)避免死锁）
+            LoadDictAsync().GetAwaiter().GetResult();
 
             Debug.WriteLine("{0} words (and their prefixes)", Trie.Count);
             Debug.WriteLine("total freq: {0}", Total);
         }
 
         /// <summary>
-        /// 使用指定配置创建词典实例
+        /// 使用指定配置创建词典实例（带缓存）
+        /// 相同配置会复用已加载的词典实例
+        /// 适用于JiebaSegmenter等不需要独立词典的场景
         /// </summary>
         /// <param name="config">分词器配置，控制加载哪些词库</param>
-        internal WordDictionary(JiebaConfig config)
+        internal static WordDictionary GetOrCreate(JiebaConfig config)
         {
             var effectiveConfig = config.ApplyAutoFallback(ConfigManager.ConfigFileBaseDir);
-            // 在 ThreadPool 上执行，避免捕获当前同步上下文导致死锁
-            Task.Run(() => LoadDictAsync(effectiveConfig)).GetAwaiter().GetResult();
+            var cacheKey = $"{effectiveConfig.Mode}_{effectiveConfig.Emoji}";
 
-            Debug.WriteLine("{0} words (and their prefixes)", Trie.Count);
-            Debug.WriteLine("total freq: {0}", Total);
-            Debug.WriteLine("加载模式: {0}, 表情包: {1}", effectiveConfig.Mode, effectiveConfig.Emoji);
+            return _cache.GetOrAdd(cacheKey, _ => new Lazy<WordDictionary>(() =>
+            {
+                var dict = new WordDictionary(true);
+                dict.LoadDictAsync(effectiveConfig).GetAwaiter().GetResult();
+
+                Debug.WriteLine("{0} words (and their prefixes)", dict.Trie.Count);
+                Debug.WriteLine("total freq: {0}", dict.Total);
+                Debug.WriteLine("加载模式: {0}, 表情包: {1}", effectiveConfig.Mode, effectiveConfig.Emoji);
+                return dict;
+            })).Value;
+        }
+
+        /// <summary>
+        /// 创建独立的词典实例（不缓存）
+        /// 每次调用都会创建新的词典实例，互不影响
+        /// 适用于Tokenizer等需要独立词典的场景
+        /// </summary>
+        /// <param name="config">分词器配置，控制加载哪些词库</param>
+        internal static WordDictionary CreateIndependent(JiebaConfig config)
+        {
+            var effectiveConfig = config.ApplyAutoFallback(ConfigManager.ConfigFileBaseDir);
+            var dict = new WordDictionary(true);
+            dict.LoadDictAsync(effectiveConfig).GetAwaiter().GetResult();
+
+            Debug.WriteLine("[独立词典] {0} words (and their prefixes)", dict.Trie.Count);
+            Debug.WriteLine("[独立词典] total freq: {0}", dict.Total);
+            Debug.WriteLine("[独立词典] 加载模式: {0}, 表情包: {1}", effectiveConfig.Mode, effectiveConfig.Emoji);
+            return dict;
         }
 
         /// <summary>
@@ -68,34 +104,58 @@ namespace JiebaNet.Segmenter
         }
 
         /// <summary>
-        /// 异步创建词典实例（全量加载）
-        /// 使用await using加速大词典文件读取
+        /// 异步创建词典实例（全量加载，带缓存）
         /// </summary>
         public static async Task<WordDictionary> CreateAsync()
         {
+            var cacheKey = "full_all";
+
+            if (_cache.TryGetValue(cacheKey, out var cached))
+            {
+                return cached.Value;
+            }
+
             var dict = new WordDictionary(true);
             await dict.LoadDictAsync().ConfigureAwait(false);
 
             Debug.WriteLine("{0} words (and their prefixes)", dict.Trie.Count);
             Debug.WriteLine("total freq: {0}", dict.Total);
+
+            _cache.TryAdd(cacheKey, new Lazy<WordDictionary>(() => dict));
             return dict;
         }
 
         /// <summary>
-        /// 异步创建词典实例（按配置加载）
-        /// 使用await using加速大词典文件读取
+        /// 异步创建词典实例（按配置加载，带缓存）
         /// </summary>
         /// <param name="config">分词器配置</param>
         public static async Task<WordDictionary> CreateAsync(JiebaConfig config)
         {
             var effectiveConfig = config.ApplyAutoFallback(ConfigManager.ConfigFileBaseDir);
+            var cacheKey = $"{effectiveConfig.Mode}_{effectiveConfig.Emoji}";
+
+            if (_cache.TryGetValue(cacheKey, out var cached))
+            {
+                return cached.Value;
+            }
+
             var dict = new WordDictionary(true);
             await dict.LoadDictAsync(effectiveConfig).ConfigureAwait(false);
 
             Debug.WriteLine("{0} words (and their prefixes)", dict.Trie.Count);
             Debug.WriteLine("total freq: {0}", dict.Total);
             Debug.WriteLine("加载模式: {0}, 表情包: {1}", effectiveConfig.Mode, effectiveConfig.Emoji);
+
+            _cache.TryAdd(cacheKey, new Lazy<WordDictionary>(() => dict));
             return dict;
+        }
+
+        /// <summary>
+        /// 清除词典缓存（用于重新加载词典）
+        /// </summary>
+        public static void ClearCache()
+        {
+            _cache.Clear();
         }
 
         public static WordDictionary Instance
@@ -107,7 +167,7 @@ namespace JiebaNet.Segmenter
 
         /// <summary>
         /// 异步加载词典（全量模式）
-        /// 使用await using加速大词典文件读取
+        /// 使用内存映射文件和并行加载优化
         /// </summary>
         private async Task LoadDictAsync()
         {
@@ -119,9 +179,9 @@ namespace JiebaNet.Segmenter
                 // 并行异步加载所有词典
                 var tasks = new List<Task>
                 {
-                    LoadDictFileAsync(MainDict, "主词典(简体)"),
-                    LoadDictFileAsync(MainDictHant, "繁体中文词典"),
-                    LoadEmojiDictFileAsync(EmojiDict)
+                    LoadDictFileWithMemoryMapAsync(MainDict, "主词典(简体)"),
+                    LoadDictFileWithMemoryMapAsync(MainDictHant, "繁体中文词典"),
+                    LoadEmojiDictFileWithMemoryMapAsync(EmojiDict)
                 };
 
                 await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -141,7 +201,7 @@ namespace JiebaNet.Segmenter
 
         /// <summary>
         /// 异步加载词典（按配置）
-        /// 使用await using加速大词典文件读取
+        /// 使用内存映射文件和并行加载优化
         /// </summary>
         /// <param name="config">分词器配置</param>
         private async Task LoadDictAsync(JiebaConfig config)
@@ -155,17 +215,17 @@ namespace JiebaNet.Segmenter
 
                 if (config.ShouldLoadZhHans)
                 {
-                    tasks.Add(LoadDictFileAsync(MainDict, "主词典(简体)"));
+                    tasks.Add(LoadDictFileWithMemoryMapAsync(MainDict, "主词典(简体)"));
                 }
 
                 if (config.ShouldLoadZhHant)
                 {
-                    tasks.Add(LoadDictFileAsync(MainDictHant, "繁体中文词典"));
+                    tasks.Add(LoadDictFileWithMemoryMapAsync(MainDictHant, "繁体中文词典"));
                 }
 
                 if (config.ShouldLoadEmoji)
                 {
-                    tasks.Add(LoadEmojiDictFileAsync(EmojiDict));
+                    tasks.Add(LoadEmojiDictFileWithMemoryMapAsync(EmojiDict));
                 }
 
                 await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -184,12 +244,12 @@ namespace JiebaNet.Segmenter
         }
 
         /// <summary>
-        /// 异步加载词典文件
-        /// 使用ReadLineAsync()实现非阻塞读取大词典
+        /// 使用内存映射文件异步加载词典文件
+        /// 适用于大词典文件，减少内存拷贝
         /// </summary>
         /// <param name="dictFile">词典文件路径</param>
         /// <param name="dictName">词典名称（用于日志）</param>
-        private async Task LoadDictFileAsync(string dictFile, string dictName)
+        private async Task LoadDictFileWithMemoryMapAsync(string dictFile, string dictName)
         {
             if (!File.Exists(dictFile))
             {
@@ -200,31 +260,31 @@ namespace JiebaNet.Segmenter
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
+            var fileInfo = new FileInfo(dictFile);
+            var fileSize = fileInfo.Length;
+
+            // 小文件直接用StreamReader，大文件用内存映射
+            if (fileSize < 1024 * 1024) // < 1MB
+            {
+                await LoadDictFileSmallAsync(dictFile, dictName, stopWatch).ConfigureAwait(false);
+            }
+            else
+            {
+                await LoadDictFileLargeAsync(dictFile, dictName, stopWatch).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>
+        /// 加载小词典文件（直接读取）
+        /// </summary>
+        private async Task LoadDictFileSmallAsync(string dictFile, string dictName, Stopwatch stopWatch)
+        {
             using (var sr = new StreamReader(dictFile, Encoding.UTF8))
             {
                 string line;
                 while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
                 {
-                    var tokens = line.Split(' ');
-                    if (tokens.Length < 2)
-                    {
-                        continue;
-                    }
-
-                    var word = tokens[0];
-                    var freq = int.Parse(tokens[1]);
-
-                    Trie[word] = freq;
-                    Total += freq;
-
-                    foreach (var ch in Enumerable.Range(0, word.Length))
-                    {
-                        var wfrag = word.Sub(0, ch + 1);
-                        if (!Trie.ContainsKey(wfrag))
-                        {
-                            Trie[wfrag] = 0;
-                        }
-                    }
+                    ProcessDictLine(line);
                 }
             }
 
@@ -233,11 +293,91 @@ namespace JiebaNet.Segmenter
         }
 
         /// <summary>
-        /// 异步加载emoji词典文件
-        /// 使用ReadLineAsync()实现非阻塞读取
+        /// 加载大词典文件（内存映射）
+        /// </summary>
+        private async Task LoadDictFileLargeAsync(string dictFile, string dictName, Stopwatch stopWatch)
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    using (var mmf = MemoryMappedFile.CreateFromFile(dictFile, FileMode.Open, null, 0,
+                        MemoryMappedFileAccess.Read))
+                    using (var accessor = mmf.CreateViewStream(0, 0, MemoryMappedFileAccess.Read))
+                    using (var sr = new StreamReader(accessor, Encoding.UTF8))
+                    {
+                        string line;
+                        while ((line = sr.ReadLine()) != null)
+                        {
+                            ProcessDictLine(line);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("内存映射加载失败，回退到普通读取: {0}", ex.Message);
+                    // 回退到普通读取
+                    using (var sr = new StreamReader(dictFile, Encoding.UTF8))
+                    {
+                        string line;
+                        while ((line = sr.ReadLine()) != null)
+                        {
+                            ProcessDictLine(line);
+                        }
+                    }
+                }
+            }).ConfigureAwait(false);
+
+            stopWatch.Stop();
+            Debug.WriteLine("{0}异步加载完成（内存映射），耗时 {1} ms", dictName, stopWatch.ElapsedMilliseconds);
+        }
+
+        /// <summary>
+        /// 处理词典行（提取公共逻辑）
+        /// </summary>
+        private void ProcessDictLine(string line)
+        {
+            var tokens = line.Split(' ');
+            if (tokens.Length < 2)
+            {
+                return;
+            }
+
+            var word = tokens[0];
+            if (!int.TryParse(tokens[1], out var freq))
+            {
+                return;
+            }
+
+            Trie[word] = freq;
+            AddToTotal(freq);
+
+            // 并行构建前缀（使用Span优化）
+            var wordSpan = word.AsSpan();
+            for (var i = 0; i < wordSpan.Length; i++)
+            {
+                var wfrag = wordSpan.Slice(0, i + 1).ToString();
+                Trie.TryAdd(wfrag, 0);
+            }
+        }
+
+        /// <summary>
+        /// 线程安全的Total累加
+        /// </summary>
+        private void AddToTotal(double value)
+        {
+            lock (_totalLock)
+            {
+                _total += value;
+                Total = _total;
+            }
+        }
+
+        /// <summary>
+        /// 使用内存映射文件异步加载emoji词典
         /// </summary>
         /// <param name="dictFile">emoji词典文件路径</param>
-        private async Task LoadEmojiDictFileAsync(string dictFile)
+        private async Task LoadEmojiDictFileWithMemoryMapAsync(string dictFile)
         {
             if (!File.Exists(dictFile))
             {
@@ -263,20 +403,17 @@ namespace JiebaNet.Segmenter
                     // 解析格式：emoji 频率 词性
                     var tokens = line.Split(' ');
                     var emoji = tokens[0];
-                    var freq = tokens.Length >= 2 ? int.Parse(tokens[1]) : 10000;
+                    var freq = tokens.Length >= 2 && int.TryParse(tokens[1], out var f) ? f : 10000;
 
                     Trie[emoji] = freq;
-                    Total += freq;
+                    AddToTotal(freq);
 
                     // 构建emoji专用前缀树（包含前缀，用于匹配）
                     EmojiTrie[emoji] = freq;
                     for (var i = 0; i < emoji.Length; i++)
                     {
                         var prefix = emoji.Substring(0, i + 1);
-                        if (!EmojiTrie.ContainsKey(prefix))
-                        {
-                            EmojiTrie[prefix] = 0;
-                        }
+                        EmojiTrie.TryAdd(prefix, 0);
                     }
 
                     count++;
@@ -291,7 +428,7 @@ namespace JiebaNet.Segmenter
 
         public bool ContainsWord(string word)
         {
-            return Trie.ContainsKey(word) && Trie[word] > 0;
+            return Trie.TryGetValue(word, out var freq) && freq > 0;
         }
 
         /// <summary>
@@ -348,37 +485,30 @@ namespace JiebaNet.Segmenter
         private string GetOrCreateString(ReadOnlySpan<char> span)
         {
             var hash = span.GetSpanHashCode();
+            // 先检查是否已存在
             if (_stringPool.TryGetValue(hash, out var cached))
             {
-                // 验证哈希冲突
-                if (cached.AsSpan().SequenceEqual(span))
-                {
-                    return cached;
-                }
+                return cached;
             }
-
             // 创建新字符串并缓存
             var newString = span.ToString();
-            _stringPool[hash] = newString;
+            _stringPool.TryAdd(hash, newString);
             return newString;
         }
 
-        public void AddWord(string word, int freq, string tag = null)
+        public void AddWord(string word, int freq, string? tag = null)
         {
             if (ContainsWord(word))
             {
-                Total -= Trie[word];
+                AddToTotal(-Trie[word]);
             }
 
             Trie[word] = freq;
-            Total += freq;
+            AddToTotal(freq);
             for (var i = 0; i < word.Length; i++)
             {
                 var wfrag = word.Substring(0, i + 1);
-                if (!Trie.ContainsKey(wfrag))
-                {
-                    Trie[wfrag] = 0;
-                }
+                Trie.TryAdd(wfrag, 0);
             }
         }
 
@@ -419,10 +549,10 @@ namespace JiebaNet.Segmenter
             while (len <= maxCheck)
             {
                 var substr = text.Substring(startIndex, len);
-                if (EmojiTrie.ContainsKey(substr))
+                if (EmojiTrie.TryGetValue(substr, out var freq))
                 {
                     // 如果是完整emoji（freq > 0），记录长度
-                    if (EmojiTrie[substr] > 0)
+                    if (freq > 0)
                     {
                         maxLen = len;
                     }

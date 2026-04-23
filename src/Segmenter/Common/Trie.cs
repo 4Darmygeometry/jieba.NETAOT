@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -9,7 +9,7 @@ namespace JiebaNet.Segmenter.Common
     {
         public char Char { get; set; }
         public int Frequency { get; set; }
-        public Dictionary<char, TrieNode> Children { get; set; }
+        public Dictionary<char, TrieNode>? Children { get; set; }
 
         public TrieNode(char ch)
         {

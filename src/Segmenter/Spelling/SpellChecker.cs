@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using JiebaNet.Segmenter.Common;
 
@@ -152,7 +152,7 @@ namespace JiebaNet.Segmenter.Spelling
 
     internal class WordSplit
     {
-        public string Left { get; set; }
-        public string Right { get; set; }
+        public string Left { get; set; } = string.Empty;
+        public string Right { get; set; } = string.Empty;
     }
 }

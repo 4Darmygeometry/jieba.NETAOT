@@ -60,13 +60,14 @@ namespace JiebaNet.Segmenter
         }
 
         /// <summary>
-        /// 使用指定配置创建分词器实例
+        /// 使用指定配置创建分词器实例（带缓存）
+        /// 相同配置会复用已加载的词典实例
         /// </summary>
         /// <param name="config">分词器配置，控制词典加载模式</param>
         public JiebaSegmenter(JiebaConfig config)
         {
             UserWordTagTab = new Dictionary<string, string>();
-            CurrentWordDict = new WordDictionary(config);
+            CurrentWordDict = WordDictionary.GetOrCreate(config);
         }
 
         /// <summary>

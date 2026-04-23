@@ -17,10 +17,10 @@ namespace JiebaNet.Segmenter.FinalSeg
         private static readonly Regex RegexChinese = new Regex(@"([\u4E00-\u9FD5]+)", RegexOptions.Compiled);
         private static readonly Regex RegexSkip = new Regex(@"([a-zA-Z0-9]+(?:\.\d+)?%?)", RegexOptions.Compiled);
 
-        private static IDictionary<char, IDictionary<char, double>> _emitProbs;
-        private static IDictionary<char, double> _startProbs;
-        private static IDictionary<char, IDictionary<char, double>> _transProbs;
-        private static IDictionary<char, char[]> _prevStatus;
+        private static IDictionary<char, IDictionary<char, double>> _emitProbs = null!;
+        private static IDictionary<char, double> _startProbs = null!;
+        private static IDictionary<char, IDictionary<char, double>> _transProbs = null!;
+        private static IDictionary<char, char[]> _prevStatus = null!;
 
         private Viterbi()
         {
