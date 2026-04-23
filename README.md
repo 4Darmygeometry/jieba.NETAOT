@@ -1,6 +1,6 @@
 jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的.NET版本（C#实现），支持AOT编译。
 
-当前版本为1.0.4，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式（如须使用paddle模式，请见https://github.com/sdcb/PaddleSharp/blob/master/docs%2Fpaddlenlp-lac.md ）。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
+当前版本为1.0.5，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式（如须使用paddle模式，请见https://github.com/sdcb/PaddleSharp/blob/master/docs%2Fpaddlenlp-lac.md ）。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
 
 此外，也提供了 `KeywordProcessor`，参考 [FlashText](https://github.com/vi3k6i5/flashtext) 实现。`KeywordProcessor` 可以更灵活地从文本中提取**词典中的关键词**，比如忽略大小写、含空格的词等。
 
@@ -14,6 +14,8 @@ jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的
     - 搜索引擎模式，在精确模式的基础上，对长词再次切分，提高召回率，**适合用于搜索引擎分词**。
 * 支持**繁体分词**
 * 支持添加自定义词典和自定义词
+* 支持lcut与lcutforsearch直接返回列表
+* 支持异步加载词典
 * 支持TF-IDF、TextRank算法关键词提取
 * 支持含Emoji句子断句
 * 支持带变体选择符和ZWJ的复杂emoji断句（甚至支持到Unicode 16的emoji）
@@ -32,7 +34,7 @@ jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的
 
 从版本1.0.2开始，netstandard基线从2.0升级为2.1（与.NET Framework 4.8同年推出），以更好处理2019年及之后的emoji。
 
-当前版本支持net10.0、net48和netstandard2.1（兼容.NET 6+），可以手动引用项目，也可以通过NuGet添加引用：
+当前版本支持net10.0、net48、netstandard2.0和netstandard2.1（兼容.NET 6+），可以手动引用项目，也可以通过NuGet添加引用：
 
 ```shell
 PM> Install-Package AOTba
@@ -67,8 +69,10 @@ JiebaNet.Segmenter.ConfigManager.ConfigFileBaseDir = @"C:\jiebanet\config";
 
 * `JiebaSegmenter.Cut`方法接受三个输入参数，text为待分词的字符串；cutAll指定是否采用全模式；hmm指定使用是否使用hmm模型切分未登录词；返回类型为`IEnumerable<string>`
 * `JiebaSegmenter.CutForSearch`方法接受两个输入参数，text为待分词的字符串；hmm指定使用是否使用hmm模型；返回类型为`IEnumerable<string>`
+* `JiebaSegmenter.LCut`方法接受三个输入参数，text为待分词的字符串；cutAll指定是否采用全模式；hmm指定使用是否使用hmm模型切分未登录词；返回类型为`List<string>`
+* `JiebaSegmenter.LCutForSearch`方法接受两个输入参数，text为待分词的字符串；hmm指定使用是否使用hmm模型；返回类型为`List<string>`
 
-* 另外，jieba.NETAOT支持选择性加载词典，如：
+* 另外，jieba.NETAOT支持Tokenizer 自定义分词器（独立词典），如：
 ```c#
 // 仅加载简体中文词库 + 支持表情包处理
 var config = new JiebaConfig(JiebaMode.ZhHans);
@@ -79,6 +83,16 @@ var config = new JiebaConfig(JiebaMode.ZhHant, EmojiMode.Disabled);
 var segmenter = new JiebaSegmenter(config);
 
 //若 var segmenter = new JiebaSegmenter(); 则为全量加载
+
+// Tokenizer 自定义分词器（独立词典）
+var tokenizer = new Tokenizer(new JiebaConfig(JiebaMode.ZhHans));
+var result = tokenizer.Lcut("我来到北京清华大学");
+
+// jieba.dt 默认分词器
+var dtResult = Jieba.Lcut("我来到北京清华大学");
+
+// 异步加载
+var asyncSegmenter = await JiebaSegmenter.CreateAsync();
 ```
 
 代码示例
@@ -99,6 +113,17 @@ Console.WriteLine("【搜索引擎模式】：{0}", string.Join("/ ", segments))
 
 segments = segmenter.Cut("结过婚的和尚未结过婚的");
 Console.WriteLine("【歧义消除】：{0}", string.Join("/ ", segments));
+
+// Lcut 方法直接返回 List<string>，无需 ToList() 转换
+var words = segmenter.Lcut("我来到北京清华大学");
+Console.WriteLine("【Lcut精确模式】：{0}", string.Join("/ ", words));
+
+words = segmenter.Lcut("我来到北京清华大学", cutAll: true);
+Console.WriteLine("【Lcut全模式】：{0}", string.Join("/ ", words));
+
+// LcutForSearch 方法直接返回 List<string>
+words = segmenter.LcutForSearch("小明硕士毕业于中国科学院计算所");
+Console.WriteLine("【LcutForSearch】：{0}", string.Join("/ ", words));
 ```
 
 输出
@@ -109,6 +134,9 @@ Console.WriteLine("【歧义消除】：{0}", string.Join("/ ", segments));
 【新词识别】：他/ 来到/ 了/ 网易/ 杭研/ 大厦
 【搜索引擎模式】：小明/ 硕士/ 毕业/ 于/ 中国/ 科学/ 学院/ 科学院/ 中国科学院/ 计算/ 计算所/ ，/ 后/ 在/ 日本/ 京都/ 大学/ 日本京都大学/ 深造
 【歧义消除】：结过婚/ 的/ 和/ 尚未/ 结过婚/ 的
+【Lcut精确模式】：我/ 来到/ 北京/ 清华大学
+【Lcut全模式】：我/ 来到/ 北京/ 清华/ 清华大学/ 华大/ 大学
+【LcutForSearch】：小明/ 硕士/ 毕业/ 于/ 中国/ 科学/ 学院/ 科学院/ 中国科学院/ 计算/ 计算所
 ```
 
 AOT情形下含Emoji句子断句测试
@@ -150,6 +178,22 @@ AOT情形下含Emoji句子断句测试
 [测试] 繁体中文分词...
   输入: 我來到北京清華大學
   结果: 我/來到/北京/清華大學
+  通过 ✓
+[测试] lcut 直接返回 List<string>...
+  结果: 我/来到/北京/清华大学
+  通过 ✓
+[测试] lcut_for_search 直接返回 List<string>...
+  结果: 小明/硕士/毕业/于/中国/科学/学院/科学院/中国科学院/计算/计算所
+  通过 ✓
+[测试] Tokenizer 自定义分词器...
+  结果: 我/来到/北京/清华大学
+  通过 ✓
+[测试] Jieba.Dt 默认分词器...
+  结果: 我/来到/北京/清华大学
+  通过 ✓
+[测试] Tokenizer 独立词典...
+  tokenizer1: 小明/最近/在/学习/机器学习
+  tokenizer2: 小明/最近/在/学习/机器/学习
   通过 ✓
 
 === 所有AOT测试通过！ ===
