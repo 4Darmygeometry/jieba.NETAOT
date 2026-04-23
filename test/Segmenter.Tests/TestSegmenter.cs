@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using JiebaNet.Segmenter.Common;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 
 namespace JiebaNet.Segmenter.Tests
 {
