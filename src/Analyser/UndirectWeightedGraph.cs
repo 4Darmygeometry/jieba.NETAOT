@@ -6,8 +6,8 @@ namespace JiebaNet.Analyser
 {
     public class Edge
     {
-        public string Start { get; set; }
-        public string End { get; set; }
+        public string Start { get; set; } = string.Empty;
+        public string End { get; set; } = string.Empty;
         public double Weight { get; set; }
     }
 

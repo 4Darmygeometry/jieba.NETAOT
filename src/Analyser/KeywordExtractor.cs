@@ -13,7 +13,7 @@ namespace JiebaNet.Analyser
             "this", "then", "at", "have", "all", "not", "one", "has", "or", "that"
         };
 
-        protected virtual ISet<string> StopWords { get; set; }
+        protected virtual ISet<string> StopWords { get; set; } = new HashSet<string>();
 
         public void SetStopWords(string stopWordsFile)
         {
@@ -57,7 +57,7 @@ namespace JiebaNet.Analyser
             }
         }
 
-        public abstract IEnumerable<string> ExtractTags(string text, int count = 20, IEnumerable<string> allowPos = null);
-        public abstract IEnumerable<WordWeightPair> ExtractTagsWithWeight(string text, int count = 20, IEnumerable<string> allowPos = null);
+        public abstract IEnumerable<string> ExtractTags(string text, int count = 20, IEnumerable<string>? allowPos = null);
+        public abstract IEnumerable<WordWeightPair> ExtractTagsWithWeight(string text, int count = 20, IEnumerable<string>? allowPos = null);
     }
 }

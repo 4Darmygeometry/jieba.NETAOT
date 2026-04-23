@@ -18,9 +18,9 @@ namespace JiebaNet.Analyser
 
         public int Span { get; set; }
 
-        public bool PairFilter(IEnumerable<string> allowPos, Pair wp)
+        public bool PairFilter(IEnumerable<string>? allowPos, Pair wp)
         {
-            return allowPos.Contains(wp.Flag)
+            return allowPos!.Contains(wp.Flag)
                    && wp.Word.Trim().Length >= 2
                    && !StopWords.Contains(wp.Word.ToLower());
         }
@@ -38,14 +38,14 @@ namespace JiebaNet.Analyser
             }
         }
 
-        public override IEnumerable<string> ExtractTags(string text, int count = 20, IEnumerable<string> allowPos = null)
+        public override IEnumerable<string> ExtractTags(string text, int count = 20, IEnumerable<string>? allowPos = null)
         {
             var rank = ExtractTagRank(text, allowPos);
             if (count <= 0) { count = 20; }
             return rank.OrderByDescending(p => p.Value).Select(p => p.Key).Take(count);
         }
 
-        public override IEnumerable<WordWeightPair> ExtractTagsWithWeight(string text, int count = 20, IEnumerable<string> allowPos = null)
+        public override IEnumerable<WordWeightPair> ExtractTagsWithWeight(string text, int count = 20, IEnumerable<string>? allowPos = null)
         {
             var rank = ExtractTagRank(text, allowPos);
             if (count <= 0) { count = 20; }
@@ -57,7 +57,7 @@ namespace JiebaNet.Analyser
 
         #region Private Helpers
 
-        private IDictionary<string, double> ExtractTagRank(string text, IEnumerable<string> allowPos)
+        private IDictionary<string, double> ExtractTagRank(string text, IEnumerable<string>? allowPos)
         {
             if (allowPos.IsEmpty())
             {

@@ -12,14 +12,14 @@ namespace JiebaNet.Analyser
         internal IDictionary<string, double> IdfFreq { get; set; }
         internal double MedianIdf { get; set; }
 
-        public IdfLoader(string idfPath = null)
+        public IdfLoader(string? idfPath = null)
         {
             IdfFilePath = string.Empty;
             IdfFreq = new Dictionary<string, double>();
             MedianIdf = 0.0;
             if (!string.IsNullOrWhiteSpace(idfPath))
             {
-                SetNewPath(idfPath);
+                SetNewPath(idfPath!);
             }
         }
 

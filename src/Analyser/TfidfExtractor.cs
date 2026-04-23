@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using JiebaNet.Segmenter;
@@ -19,9 +19,9 @@ namespace JiebaNet.Analyser
         private IDictionary<string, double> IdfFreq { get; set; }
         private double MedianIdf { get; set; }
 
-        public TfidfExtractor(JiebaSegmenter segmenter = null)
+        public TfidfExtractor(JiebaSegmenter? segmenter = null)
         {
-            Segmenter = segmenter.IsNull() ? new JiebaSegmenter() : segmenter;
+            Segmenter = segmenter.IsNull() ? new JiebaSegmenter() : segmenter!;
             PosSegmenter = new PosSegmenter(Segmenter);
             SetStopWords(ConfigManager.StopWordsFile);
             if (StopWords.IsEmpty())
@@ -42,15 +42,15 @@ namespace JiebaNet.Analyser
             MedianIdf = Loader.MedianIdf;
         }
 
-        private IEnumerable<string> FilterCutByPos(string text, IEnumerable<string> allowPos)
+        private IEnumerable<string> FilterCutByPos(string text, IEnumerable<string>? allowPos)
         {
-            var posTags = PosSegmenter.Cut(text).Where(p => allowPos.Contains(p.Flag));
+            var posTags = PosSegmenter.Cut(text).Where(p => allowPos!.Contains(p.Flag));
             return posTags.Select(p => p.Word);
         }
 
-        private IDictionary<string, double> GetWordIfidf(string text, IEnumerable<string> allowPos)
+        private IDictionary<string, double> GetWordIfidf(string text, IEnumerable<string>? allowPos)
         {
-            IEnumerable<string> words = null;
+            IEnumerable<string>? words = null;
             if (allowPos.IsNotEmpty())
             {
                 words = FilterCutByPos(text, allowPos);
@@ -80,7 +80,7 @@ namespace JiebaNet.Analyser
             return freq;
         }
 
-        public override IEnumerable<string> ExtractTags(string text, int count = 20, IEnumerable<string> allowPos = null)
+        public override IEnumerable<string> ExtractTags(string text, int count = 20, IEnumerable<string>? allowPos = null)
         {
             if (count <= 0) { count = DefaultWordCount; }
 
@@ -88,7 +88,7 @@ namespace JiebaNet.Analyser
             return freq.OrderByDescending(p => p.Value).Select(p => p.Key).Take(count);
         }
 
-        public override IEnumerable<WordWeightPair> ExtractTagsWithWeight(string text, int count = 20, IEnumerable<string> allowPos = null)
+        public override IEnumerable<WordWeightPair> ExtractTagsWithWeight(string text, int count = 20, IEnumerable<string>? allowPos = null)
         {
             if (count <= 0) { count = DefaultWordCount; }
 
@@ -102,7 +102,7 @@ namespace JiebaNet.Analyser
 
     public class WordWeightPair
     {
-        public string Word { get; set; }
+        public string Word { get; set; } = string.Empty;
         public double Weight { get; set; }
     }
 }
