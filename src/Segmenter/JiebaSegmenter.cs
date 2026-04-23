@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using JiebaNet.Segmenter.Common;
 using JiebaNet.Segmenter.FinalSeg;
 
@@ -69,6 +70,38 @@ namespace JiebaNet.Segmenter
         }
 
         /// <summary>
+        /// 内部构造函数，用于异步工厂方法和Tokenizer
+        /// 直接传入已异步加载完成的词典实例
+        /// </summary>
+        /// <param name="wordDict">已加载完成的词典实例</param>
+        internal JiebaSegmenter(WordDictionary wordDict)
+        {
+            UserWordTagTab = new Dictionary<string, string>();
+            CurrentWordDict = wordDict;
+        }
+
+        /// <summary>
+        /// 异步创建分词器实例（全量加载）
+        /// 使用await using加速大词典文件读取
+        /// </summary>
+        public static async Task<JiebaSegmenter> CreateAsync()
+        {
+            var dict = await WordDictionary.CreateAsync().ConfigureAwait(false);
+            return new JiebaSegmenter(dict);
+        }
+
+        /// <summary>
+        /// 异步创建分词器实例（按配置加载）
+        /// 使用await using加速大词典文件读取
+        /// </summary>
+        /// <param name="config">分词器配置</param>
+        public static async Task<JiebaSegmenter> CreateAsync(JiebaConfig config)
+        {
+            var dict = await WordDictionary.CreateAsync(config).ConfigureAwait(false);
+            return new JiebaSegmenter(dict);
+        }
+
+        /// <summary>
         /// The main function that segments an entire sentence that contains 
         /// Chinese characters into seperated words.
         /// </summary>
@@ -82,6 +115,31 @@ namespace JiebaNet.Segmenter
             var reSkip = cutAll ? RegexSkipCutAll : RegexSkipDefault;
             var cutMethod = cutAll ? CutAll : hmm ? CutDag : (Func<string, IEnumerable<string>>)CutDagWithoutHmm;
             return CutIt(text, cutMethod, reHan, reSkip, cutAll);
+        }
+
+        /// <summary>
+        /// jieba.lcut的等价方法，直接返回List&lt;string&gt;
+        /// 精确模式分词，返回列表
+        /// </summary>
+        /// <param name="text">待分词文本</param>
+        /// <param name="cutAll">是否全模式</param>
+        /// <param name="hmm">是否使用HMM</param>
+        /// <returns>分词结果列表</returns>
+        public List<string> Lcut(string text, bool cutAll = false, bool hmm = true)
+        {
+            return Cut(text, cutAll, hmm).ToList();
+        }
+
+        /// <summary>
+        /// jieba.lcut_for_search的等价方法，直接返回List&lt;string&gt;
+        /// 搜索引擎模式分词，返回列表
+        /// </summary>
+        /// <param name="text">待分词文本</param>
+        /// <param name="hmm">是否使用HMM</param>
+        /// <returns>分词结果列表</returns>
+        public List<string> LcutForSearch(string text, bool hmm = true)
+        {
+            return CutForSearch(text, hmm).ToList();
         }
         
         public IEnumerable<IEnumerable<string>> CutInParallel(IEnumerable<string> texts, bool cutAll = false, bool hmm = true)
@@ -113,7 +171,7 @@ namespace JiebaNet.Segmenter
                     for (var i = 0; i < w.Length - 1; i++)
                     {
                         var gram2 = wSpan.Slice(i, 2);
-                        if (WordDict.ContainsWord(gram2))
+                        if (CurrentWordDict.ContainsWord(gram2))
                         {
                             result.Add(gram2.ToString());
                         }
@@ -126,7 +184,7 @@ namespace JiebaNet.Segmenter
                     for (var i = 0; i < w.Length - 2; i++)
                     {
                         var gram3 = wSpan.Slice(i, 3);
-                        if (WordDict.ContainsWord(gram3))
+                        if (CurrentWordDict.ContainsWord(gram3))
                         {
                             result.Add(gram3.ToString());
                         }
@@ -175,7 +233,7 @@ namespace JiebaNet.Segmenter
                         for (var i = 0; i < width - 1; i++)
                         {
                             var gram2 = wSpan.Slice(i, 2);
-                            if (WordDict.ContainsWord(gram2))
+                            if (CurrentWordDict.ContainsWord(gram2))
                             {
                                 result.Add(new Token(gram2.ToString(), start + i, start + i + 2));
                             }
@@ -187,7 +245,7 @@ namespace JiebaNet.Segmenter
                         for (var i = 0; i < width - 2; i++)
                         {
                             var gram3 = wSpan.Slice(i, 3);
-                            if (WordDict.ContainsWord(gram3))
+                            if (CurrentWordDict.ContainsWord(gram3))
                             {
                                 result.Add(new Token(gram3.ToString(), start + i, start + i + 3));
                             }
@@ -206,6 +264,7 @@ namespace JiebaNet.Segmenter
 
         /// <summary>
         /// 构建有向无环图(DAG)，使用Span优化字符串切片
+        /// 使用CurrentWordDict而非全局WordDict，支持独立词典
         /// </summary>
         internal IDictionary<int, List<int>> GetDag(string sentence)
         {
@@ -220,9 +279,9 @@ namespace JiebaNet.Segmenter
                 
                 // 使用Span进行切片，避免Substring分配
                 var frag = sentenceSpan.Slice(k, 1);
-                while (i < N && WordDict.ContainsPrefix(frag))
+                while (i < N && CurrentWordDict.ContainsPrefix(frag))
                 {
-                    var trieValue = WordDict.GetTrieValue(frag);
+                    var trieValue = CurrentWordDict.GetTrieValue(frag);
                     if (trieValue > 0)
                     {
                         templist.Add(i);
@@ -248,6 +307,7 @@ namespace JiebaNet.Segmenter
 
         /// <summary>
         /// 计算最大概率路径，使用Span优化字符串切片
+        /// 使用CurrentWordDict而非全局WordDict，支持独立词典
         /// </summary>
         internal IDictionary<int, Pair<int>> Calc(string sentence, IDictionary<int, List<int>> dag)
         {
@@ -256,7 +316,7 @@ namespace JiebaNet.Segmenter
             route[n] = new Pair<int>(0, 0.0);
 
             var sentenceSpan = sentence.AsSpan();
-            var logtotal = Math.Log(WordDict.Total);
+            var logtotal = Math.Log(CurrentWordDict.Total);
             
             for (var i = n - 1; i > -1; i--)
             {
@@ -265,7 +325,7 @@ namespace JiebaNet.Segmenter
                 {
                     // 使用Span切片获取子串
                     var subSpan = sentenceSpan.Slice(i, x + 1 - i);
-                    var freq = Math.Log(WordDict.GetFreqOrDefault(subSpan)) - logtotal + route[x + 1].Freq;
+                    var freq = Math.Log(CurrentWordDict.GetFreqOrDefault(subSpan)) - logtotal + route[x + 1].Freq;
                     if (candidate.Freq < freq)
                     {
                         candidate.Freq = freq;
@@ -425,7 +485,7 @@ namespace JiebaNet.Segmenter
                             while (i < x.Length)
                             {
                                 // 尝试匹配emoji词典
-                                var emojiLen = WordDict.MatchEmoji(x, i);
+                                var emojiLen = CurrentWordDict.MatchEmoji(x, i);
                                 if (emojiLen > 0)
                                 {
                                     // 匹配到emoji，直接添加
@@ -519,9 +579,9 @@ namespace JiebaNet.Segmenter
         {
             if (freq <= 0)
             {
-                freq = WordDict.SuggestFreq(word, Cut(word, hmm: false));
+                freq = CurrentWordDict.SuggestFreq(word, Cut(word, hmm: false));
             }
-            WordDict.AddWord(word, freq);
+            CurrentWordDict.AddWord(word, freq);
 
             // Add user word tag of POS
             if (!string.IsNullOrEmpty(tag))
@@ -532,7 +592,7 @@ namespace JiebaNet.Segmenter
 
         public void DeleteWord(string word)
         {
-            WordDict.DeleteWord(word);
+            CurrentWordDict.DeleteWord(word);
         }
 
         #endregion
@@ -547,7 +607,7 @@ namespace JiebaNet.Segmenter
             }
             else
             {
-                if (!WordDict.ContainsWord(buf))
+                if (!CurrentWordDict.ContainsWord(buf))
                 {
                     var tokens = FinalSeg.Cut(buf);
                     words.AddRange(tokens);

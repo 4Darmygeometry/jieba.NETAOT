@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using JiebaNet.Segmenter.Common;
 
 namespace JiebaNet.Segmenter
@@ -15,12 +17,12 @@ namespace JiebaNet.Segmenter
         private static readonly string EmojiDict = ConfigManager.EmojiDictFile;
         private static readonly string MainDictHant = ConfigManager.MainDictHantFile;
 
-        internal IDictionary<string, int> Trie = new Dictionary<string, int>();
+        internal IDictionary<string, int> Trie = new ConcurrentDictionary<string, int>();
 
         /// <summary>
         /// Emoji专用前缀树，用于快速匹配复杂emoji（ZWJ序列等）
         /// </summary>
-        internal IDictionary<string, int> EmojiTrie = new Dictionary<string, int>();
+        internal IDictionary<string, int> EmojiTrie = new ConcurrentDictionary<string, int>();
 
         /// <summary>
         /// 字符串池，用于缓存高频字符串切片，减少GC压力
@@ -34,7 +36,8 @@ namespace JiebaNet.Segmenter
 
         private WordDictionary()
         {
-            LoadDict();
+            // 在 ThreadPool 上执行，避免捕获当前同步上下文导致死锁
+            Task.Run(() => LoadDictAsync()).GetAwaiter().GetResult();
 
             Debug.WriteLine("{0} words (and their prefixes)", Trie.Count);
             Debug.WriteLine("total freq: {0}", Total);
@@ -47,11 +50,52 @@ namespace JiebaNet.Segmenter
         internal WordDictionary(JiebaConfig config)
         {
             var effectiveConfig = config.ApplyAutoFallback(ConfigManager.ConfigFileBaseDir);
-            LoadDict(effectiveConfig);
+            // 在 ThreadPool 上执行，避免捕获当前同步上下文导致死锁
+            Task.Run(() => LoadDictAsync(effectiveConfig)).GetAwaiter().GetResult();
 
             Debug.WriteLine("{0} words (and their prefixes)", Trie.Count);
             Debug.WriteLine("total freq: {0}", Total);
             Debug.WriteLine("加载模式: {0}, 表情包: {1}", effectiveConfig.Mode, effectiveConfig.Emoji);
+        }
+
+        /// <summary>
+        /// 私有构造函数，用于异步工厂方法
+        /// 不执行任何加载，由调用方负责初始化
+        /// </summary>
+        private WordDictionary(bool skipLoad)
+        {
+            // 异步工厂模式：不在此处加载词典
+        }
+
+        /// <summary>
+        /// 异步创建词典实例（全量加载）
+        /// 使用await using加速大词典文件读取
+        /// </summary>
+        public static async Task<WordDictionary> CreateAsync()
+        {
+            var dict = new WordDictionary(true);
+            await dict.LoadDictAsync().ConfigureAwait(false);
+
+            Debug.WriteLine("{0} words (and their prefixes)", dict.Trie.Count);
+            Debug.WriteLine("total freq: {0}", dict.Total);
+            return dict;
+        }
+
+        /// <summary>
+        /// 异步创建词典实例（按配置加载）
+        /// 使用await using加速大词典文件读取
+        /// </summary>
+        /// <param name="config">分词器配置</param>
+        public static async Task<WordDictionary> CreateAsync(JiebaConfig config)
+        {
+            var effectiveConfig = config.ApplyAutoFallback(ConfigManager.ConfigFileBaseDir);
+            var dict = new WordDictionary(true);
+            await dict.LoadDictAsync(effectiveConfig).ConfigureAwait(false);
+
+            Debug.WriteLine("{0} words (and their prefixes)", dict.Trie.Count);
+            Debug.WriteLine("total freq: {0}", dict.Total);
+            Debug.WriteLine("加载模式: {0}, 表情包: {1}", effectiveConfig.Mode, effectiveConfig.Emoji);
+            return dict;
         }
 
         public static WordDictionary Instance
@@ -59,28 +103,35 @@ namespace JiebaNet.Segmenter
             get { return lazy.Value; }
         }
 
-        private void LoadDict()
+        #region 异步加载方法
+
+        /// <summary>
+        /// 异步加载词典（全量模式）
+        /// 使用await using加速大词典文件读取
+        /// </summary>
+        private async Task LoadDictAsync()
         {
             try
             {
                 var stopWatch = new Stopwatch();
                 stopWatch.Start();
 
-                // 加载主词典（简体中文）
-                LoadDictFile(MainDict, "主词典(简体)");
+                // 并行异步加载所有词典
+                var tasks = new List<Task>
+                {
+                    LoadDictFileAsync(MainDict, "主词典(简体)"),
+                    LoadDictFileAsync(MainDictHant, "繁体中文词典"),
+                    LoadEmojiDictFileAsync(EmojiDict)
+                };
 
-                // 加载繁体中文词典
-                LoadDictFile(MainDictHant, "繁体中文词典");
-
-                // 加载emoji词典
-                LoadEmojiDictFile(EmojiDict);
+                await Task.WhenAll(tasks).ConfigureAwait(false);
 
                 stopWatch.Stop();
-                Debug.WriteLine("词典加载完成，耗时 {0} ms", stopWatch.ElapsedMilliseconds);
+                Debug.WriteLine("词典异步加载完成，耗时 {0} ms", stopWatch.ElapsedMilliseconds);
             }
             catch (IOException e)
             {
-                Debug.Fail(string.Format("词典加载失败，原因: {0}", e.Message));
+                Debug.Fail(string.Format("词典异步加载失败，原因: {0}", e.Message));
             }
             catch (FormatException fe)
             {
@@ -89,37 +140,42 @@ namespace JiebaNet.Segmenter
         }
 
         /// <summary>
-        /// 根据配置加载词典
+        /// 异步加载词典（按配置）
+        /// 使用await using加速大词典文件读取
         /// </summary>
         /// <param name="config">分词器配置</param>
-        private void LoadDict(JiebaConfig config)
+        private async Task LoadDictAsync(JiebaConfig config)
         {
             try
             {
                 var stopWatch = new Stopwatch();
                 stopWatch.Start();
 
+                var tasks = new List<Task>();
+
                 if (config.ShouldLoadZhHans)
                 {
-                    LoadDictFile(MainDict, "主词典(简体)");
+                    tasks.Add(LoadDictFileAsync(MainDict, "主词典(简体)"));
                 }
 
                 if (config.ShouldLoadZhHant)
                 {
-                    LoadDictFile(MainDictHant, "繁体中文词典");
+                    tasks.Add(LoadDictFileAsync(MainDictHant, "繁体中文词典"));
                 }
 
                 if (config.ShouldLoadEmoji)
                 {
-                    LoadEmojiDictFile(EmojiDict);
+                    tasks.Add(LoadEmojiDictFileAsync(EmojiDict));
                 }
 
+                await Task.WhenAll(tasks).ConfigureAwait(false);
+
                 stopWatch.Stop();
-                Debug.WriteLine("词典加载完成（按配置），耗时 {0} ms", stopWatch.ElapsedMilliseconds);
+                Debug.WriteLine("词典异步加载完成（按配置），耗时 {0} ms", stopWatch.ElapsedMilliseconds);
             }
             catch (IOException e)
             {
-                Debug.Fail(string.Format("词典加载失败，原因: {0}", e.Message));
+                Debug.Fail(string.Format("词典异步加载失败，原因: {0}", e.Message));
             }
             catch (FormatException fe)
             {
@@ -128,11 +184,12 @@ namespace JiebaNet.Segmenter
         }
 
         /// <summary>
-        /// 加载词典文件
+        /// 异步加载词典文件
+        /// 使用ReadLineAsync()实现非阻塞读取大词典
         /// </summary>
         /// <param name="dictFile">词典文件路径</param>
         /// <param name="dictName">词典名称（用于日志）</param>
-        private void LoadDictFile(string dictFile, string dictName)
+        private async Task LoadDictFileAsync(string dictFile, string dictName)
         {
             if (!File.Exists(dictFile))
             {
@@ -145,8 +202,8 @@ namespace JiebaNet.Segmenter
 
             using (var sr = new StreamReader(dictFile, Encoding.UTF8))
             {
-                string line = null;
-                while ((line = sr.ReadLine()) != null)
+                string line;
+                while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
                 {
                     var tokens = line.Split(' ');
                     if (tokens.Length < 2)
@@ -172,17 +229,15 @@ namespace JiebaNet.Segmenter
             }
 
             stopWatch.Stop();
-            Debug.WriteLine("{0}加载完成，耗时 {1} ms", dictName, stopWatch.ElapsedMilliseconds);
+            Debug.WriteLine("{0}异步加载完成，耗时 {1} ms", dictName, stopWatch.ElapsedMilliseconds);
         }
 
         /// <summary>
-        /// 加载emoji词典文件
-        /// emoji词典格式：emoji 频率 词性（每行一个emoji）
-        /// 使用Rune正确处理多码点emoji
-        /// 同时构建emoji专用前缀树，用于快速匹配复杂emoji
+        /// 异步加载emoji词典文件
+        /// 使用ReadLineAsync()实现非阻塞读取
         /// </summary>
         /// <param name="dictFile">emoji词典文件路径</param>
-        private void LoadEmojiDictFile(string dictFile)
+        private async Task LoadEmojiDictFileAsync(string dictFile)
         {
             if (!File.Exists(dictFile))
             {
@@ -196,8 +251,8 @@ namespace JiebaNet.Segmenter
 
             using (var sr = new StreamReader(dictFile, Encoding.UTF8))
             {
-                string line = null;
-                while ((line = sr.ReadLine()) != null)
+                string line;
+                while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
                 {
                     line = line.Trim();
                     if (string.IsNullOrEmpty(line))
@@ -229,8 +284,10 @@ namespace JiebaNet.Segmenter
             }
 
             stopWatch.Stop();
-            Debug.WriteLine("emoji词典加载完成，共 {0} 个emoji，耗时 {1} ms", count, stopWatch.ElapsedMilliseconds);
+            Debug.WriteLine("emoji词典异步加载完成，共 {0} 个emoji，耗时 {1} ms", count, stopWatch.ElapsedMilliseconds);
         }
+
+        #endregion
 
         public bool ContainsWord(string word)
         {
