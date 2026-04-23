@@ -319,7 +319,7 @@ class Program
                 return true;
             }
             Console.WriteLine("  部分通过 ⚠");
-            return true; // 即使部分失败也算通过，因为这是新功能
+            return false; //AOT模式的目标框架可以自动识别新表情包，不用查表。部分通过即为失败
         }
         catch (Exception ex)
         {
