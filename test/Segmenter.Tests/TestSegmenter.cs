@@ -418,5 +418,183 @@ namespace JiebaNet.Segmenter.Tests
         }
 
         #endregion
+
+#if AOTBA
+        #region AOTBA 新功能测试
+
+        /// <summary>
+        /// 测试 lcut 方法（直接返回 List&lt;string&gt;）
+        /// </summary>
+        [TestCase]
+        public void Test_Lcut()
+        {
+            var seg = new JiebaSegmenter();
+            var text = "我来到北京清华大学";
+            var words = seg.Lcut(text);
+            Assert.IsInstanceOf<List<string>>(words);
+            CollectionAssert.AreEqual(seg.Cut(text).ToList(), words);
+            Console.WriteLine(string.Join("/", words));
+        }
+
+        /// <summary>
+        /// 测试 lcut 全模式
+        /// </summary>
+        [TestCase]
+        public void Test_Lcut_CutAll()
+        {
+            var seg = new JiebaSegmenter();
+            var text = "我来到北京清华大学";
+            var words = seg.Lcut(text, cutAll: true);
+            Assert.IsInstanceOf<List<string>>(words);
+            CollectionAssert.AreEqual(seg.Cut(text, cutAll: true).ToList(), words);
+            Console.WriteLine(string.Join("/", words));
+        }
+
+        /// <summary>
+        /// 测试 lcut_for_search 方法（直接返回 List&lt;string&gt;）
+        /// </summary>
+        [TestCase]
+        public void Test_LcutForSearch()
+        {
+            var seg = new JiebaSegmenter();
+            var text = "小明硕士毕业于中国科学院计算所，后在日本京都大学深造";
+            var words = seg.LcutForSearch(text);
+            Assert.IsInstanceOf<List<string>>(words);
+            CollectionAssert.AreEqual(seg.CutForSearch(text).ToList(), words);
+            Console.WriteLine(string.Join("/", words));
+        }
+
+        /// <summary>
+        /// 测试 lcut_for_search 不使用 HMM
+        /// </summary>
+        [TestCase]
+        public void Test_LcutForSearch_WithoutHmm()
+        {
+            var seg = new JiebaSegmenter();
+            var text = "小明硕士毕业于中国科学院计算所，后在日本京都大学深造";
+            var words = seg.LcutForSearch(text, hmm: false);
+            Assert.IsInstanceOf<List<string>>(words);
+            CollectionAssert.AreEqual(seg.CutForSearch(text, hmm: false).ToList(), words);
+            Console.WriteLine(string.Join("/", words));
+        }
+
+        /// <summary>
+        /// 测试 Tokenizer 自定义分词器（独立词典）
+        /// </summary>
+        [TestCase]
+        public void Test_Tokenizer()
+        {
+            var tokenizer = new Tokenizer();
+            var text = "我来到北京清华大学";
+            var words = tokenizer.Lcut(text);
+            Assert.IsInstanceOf<List<string>>(words);
+            Assert.That(words, Contains.Item("清华大学"));
+            Console.WriteLine(string.Join("/", words));
+        }
+
+        /// <summary>
+        /// 测试 Tokenizer 使用配置创建
+        /// </summary>
+        [TestCase]
+        public void Test_Tokenizer_WithConfig()
+        {
+            var config = new JiebaConfig(JiebaMode.ZhHans);
+            var tokenizer = new Tokenizer(config);
+            var text = "我来到北京清华大学";
+            var words = tokenizer.Lcut(text);
+            Assert.IsInstanceOf<List<string>>(words);
+            Assert.That(words, Contains.Item("清华大学"));
+            Console.WriteLine(string.Join("/", words));
+        }
+
+        /// <summary>
+        /// 测试 Tokenizer 独立词典（添加词不影响其他实例）
+        /// </summary>
+        [TestCase]
+        public void Test_Tokenizer_IndependentDict()
+        {
+            var tokenizer1 = new Tokenizer();
+            var tokenizer2 = new Tokenizer();
+            var text = "小明最近在学习机器学习和自然语言处理";
+
+            // tokenizer1 添加新词
+            tokenizer1.AddWord("机器学习");
+            var words1 = tokenizer1.Lcut(text);
+            Assert.That(words1, Contains.Item("机器学习"));
+
+            // tokenizer2 不受影响
+            var words2 = tokenizer2.Lcut(text);
+            Assert.That(words2, Is.Not.Contains("机器学习"));
+            Assert.That(words2, Contains.Item("机器"));
+        }
+
+        /// <summary>
+        /// 测试 Jieba.Dt 默认分词器
+        /// </summary>
+        [TestCase]
+        public void Test_JiebaDt()
+        {
+            var text = "我来到北京清华大学";
+            var words = Jieba.Lcut(text);
+            Assert.IsInstanceOf<List<string>>(words);
+            Assert.That(words, Contains.Item("清华大学"));
+            Console.WriteLine(string.Join("/", words));
+        }
+
+        /// <summary>
+        /// 测试 Jieba 静态方法（都是 Jieba.Dt 的映射）
+        /// </summary>
+        [TestCase]
+        public void Test_Jieba_StaticMethods()
+        {
+            var text = "我来到北京清华大学";
+
+            // 测试 Cut
+            var cutResult = Jieba.Cut(text).ToList();
+            Assert.That(cutResult, Contains.Item("清华大学"));
+
+            // 测试 Lcut
+            var lcutResult = Jieba.Lcut(text);
+            CollectionAssert.AreEqual(cutResult, lcutResult);
+
+            // 测试 CutForSearch
+            var searchResult = Jieba.CutForSearch(text).ToList();
+            Assert.That(searchResult.Count, Is.GreaterThan(0));
+
+            // 测试 LcutForSearch
+            var lcutSearchResult = Jieba.LcutForSearch(text);
+            CollectionAssert.AreEqual(searchResult, lcutSearchResult);
+        }
+
+        /// <summary>
+        /// 测试异步创建 Tokenizer
+        /// </summary>
+        [TestCase]
+        public async System.Threading.Tasks.Task Test_Tokenizer_CreateAsync()
+        {
+            var tokenizer = await Tokenizer.CreateAsync();
+            var text = "我来到北京清华大学";
+            var words = tokenizer.Lcut(text);
+            Assert.IsInstanceOf<List<string>>(words);
+            Assert.That(words, Contains.Item("清华大学"));
+            Console.WriteLine(string.Join("/", words));
+        }
+
+        /// <summary>
+        /// 测试异步创建 JiebaSegmenter
+        /// </summary>
+        [TestCase]
+        public async System.Threading.Tasks.Task Test_JiebaSegmenter_CreateAsync()
+        {
+            var seg = await JiebaSegmenter.CreateAsync();
+            var text = "我来到北京清华大学";
+            var words = seg.Lcut(text);
+            Assert.IsInstanceOf<List<string>>(words);
+            Assert.That(words, Contains.Item("清华大学"));
+            Console.WriteLine(string.Join("/", words));
+        }
+
+        #endregion
+#endif
     }
 }
