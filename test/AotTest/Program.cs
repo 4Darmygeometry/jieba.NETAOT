@@ -32,6 +32,8 @@ class Program
         allPassed &= TestTraditionalChineseSegment();
 
 #if AOTBA
+        allPassed &= TestDateTimeSegment();
+        allPassed &= TestDateTimePosSegment();
         allPassed &= TestLcut();
         allPassed &= TestLcutForSearch();
         allPassed &= TestTokenizer();
@@ -357,6 +359,116 @@ class Program
     }
 
 #if AOTBA
+    static bool TestDateTimeSegment()
+    {
+        Console.WriteLine("[测试] 日期时间分词...");
+        try
+        {
+            var segmenter = new JiebaSegmenter();
+
+            // 测试1：时间格式 4:50（Issue #1）
+            var text1 = "今天4:50某某某领了一只记号笔";
+            var result1 = segmenter.Cut(text1).ToList();
+            var joined1 = string.Join("/", result1);
+            Console.WriteLine($"  测试1: {text1}");
+            Console.WriteLine($"  结果: {joined1}");
+            if (!result1.Contains("今天4:50"))
+            {
+                Console.WriteLine("  失败 ✗ '今天4:50'未被正确识别为整体时间");
+                return false;
+            }
+
+            // 测试2：ISO日期时间格式（Issue #2）
+            var text2 = "会议时间是2021-01-01 09:00:00";
+            var result2 = segmenter.Cut(text2).ToList();
+            var joined2 = string.Join("/", result2);
+            Console.WriteLine($"  测试2: {text2}");
+            Console.WriteLine($"  结果: {joined2}");
+            if (!result2.Contains("2021-01-01 09:00:00") && !result2.Contains("2021-01-01"))
+            {
+                Console.WriteLine("  失败 ✗ ISO日期时间未被正确识别");
+                return false;
+            }
+
+            // 测试3：中文日期
+            var text3 = "2021年1月1日是元旦";
+            var result3 = segmenter.Cut(text3).ToList();
+            var joined3 = string.Join("/", result3);
+            Console.WriteLine($"  测试3: {text3}");
+            Console.WriteLine($"  结果: {joined3}");
+            if (!result3.Contains("2021年1月1日"))
+            {
+                Console.WriteLine("  失败 ✗ 中文日期未被正确识别");
+                return false;
+            }
+
+            // 测试4：节日
+            var text4 = "春节是中国的传统节日";
+            var result4 = segmenter.Cut(text4).ToList();
+            var joined4 = string.Join("/", result4);
+            Console.WriteLine($"  测试4: {text4}");
+            Console.WriteLine($"  结果: {joined4}");
+            if (!result4.Contains("春节"))
+            {
+                Console.WriteLine("  失败 ✗ 节日未被正确识别");
+                return false;
+            }
+
+            // 测试5：相对时间
+            var text5 = "明天下午3点开会";
+            var result5 = segmenter.Cut(text5).ToList();
+            var joined5 = string.Join("/", result5);
+            Console.WriteLine($"  测试5: {text5}");
+            Console.WriteLine($"  结果: {joined5}");
+            // 检查相对时间和时间是否被识别
+            var hasTime = result5.Any(w => w.Contains("明天") || w.Contains("下午") || w.Contains("3点"));
+            if (!hasTime)
+            {
+                Console.WriteLine("  失败 ✗ 相对时间未被正确识别");
+                return false;
+            }
+
+            Console.WriteLine("  通过 ✓");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  异常: {ex.Message}");
+            return false;
+        }
+    }
+
+    static bool TestDateTimePosSegment()
+    {
+        Console.WriteLine("[测试] 日期时间词性标注...");
+        try
+        {
+            var posSeg = new PosSegmenter();
+
+            // 测试：时间格式 4:50
+            var text = "今天4:50某某某领了一只记号笔";
+            var result = posSeg.Cut(text).ToList();
+            var joined = string.Join("/", result);
+            Console.WriteLine($"  输入: {text}");
+            Console.WriteLine($"  结果: {joined}");
+
+            // 检查今天4:50是否被识别为时间词性（t）
+            var hasTimeTag = result.Any(p => p.Word.Contains("今天4:50") && p.Flag == "t");
+            if (!hasTimeTag)
+            {
+                Console.WriteLine("  失败 ✗ '今天4:50'未被正确标记为时间词性");
+                return false;
+            }
+
+            Console.WriteLine("  通过 ✓");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  异常: {ex.Message}");
+            return false;
+        }
+    }
     static bool TestLcut()
     {
         Console.WriteLine("[测试] lcut 直接返回 List<string>...");
