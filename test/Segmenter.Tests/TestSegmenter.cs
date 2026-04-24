@@ -1423,6 +1423,49 @@ namespace JiebaNet.Segmenter.Tests
             Assert.That(result6, Contains.Item("19分20秒"), "'19分20秒'应被识别为整体时间");
         }
 
+        /// <summary>
+        /// 测试GB18030-2022扩展B-I区生僻字分词
+        /// 包括扩展G区（𰻝）、扩展B区（𧒽）、扩展E区（𬒔）等字符
+        /// </summary>
+        [TestCase]
+        public void TestGB18030_ExtendedCJK()
+        {
+            var seg = new JiebaSegmenter();
+
+            // 测试1：𰻝𰻝面（扩展G区字符，U+30EDD）
+            // 这是陕西特色面食"biangbiang面"的写法
+            var text1 = "我今天吃了𰻝𰻝面，很好吃";
+            var result1 = seg.Cut(text1).ToList();
+            var joined1 = string.Join("/", result1);
+            Console.WriteLine($"[生僻字1] {text1} -> {joined1}");
+            Assert.That(result1, Contains.Item("𰻝𰻝面"), "'𰻝𰻝面'应被识别为整体（词典词条）");
+
+            // 测试2：𧒽岗（扩展B区字符，U+274BD）
+            // 这是佛山市南海区桂城街道的一个地名
+            var text2 = "南海有轨电车一号线，起点为𧒽岗，终点为林岳东";
+            var result2 = seg.Cut(text2).ToList();
+            var joined2 = string.Join("/", result2);
+            Console.WriteLine($"[生僻字2] {text2} -> {joined2}");
+            Assert.That(result2, Contains.Item("𧒽岗"), "'𧒽岗'应被识别为整体（词典词条）");
+
+            // 测试3：石𬒔（扩展E区字符，U+2C514）
+            // 这是佛山市南海区桂城街道的一个地名
+            var text3 = "石𬒔是佛山市南海区桂城街道的一个地名";
+            var result3 = seg.Cut(text3).ToList();
+            var joined3 = string.Join("/", result3);
+            Console.WriteLine($"[生僻字3] {text3} -> {joined3}");
+            Assert.That(result3, Contains.Item("石𬒔"), "'石𬒔'应被识别为整体（词典词条）");
+
+            // 测试4：混合场景，包含多种扩展区字符
+            var text4 = "从𧒽岗出发，经过石𬒔，最后去吃𰻝𰻝面";
+            var result4 = seg.Cut(text4).ToList();
+            var joined4 = string.Join("/", result4);
+            Console.WriteLine($"[生僻字4] {text4} -> {joined4}");
+            Assert.That(result4, Contains.Item("𧒽岗"), "'𧒽岗'应被识别为整体");
+            Assert.That(result4, Contains.Item("石𬒔"), "'石𬒔'应被识别为整体");
+            Assert.That(result4, Contains.Item("𰻝𰻝面"), "'𰻝𰻝面'应被识别为整体");
+        }
+
         #endregion
 #endif
     }
