@@ -10,7 +10,7 @@
     <Copyright>Copyright © andersc, 4Darmygeometry 2026</Copyright>
     <RepositoryUrl>https://github.com/4Darmygeometry/jieba.NETAOT/</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageTags>chinese;nlp;segmentation;jieba;aot;emoji;traditional-chinese</PackageTags>
+    <PackageTags>chinese;nlp;segmentation;jieba;aot;emoji;traditional-chinese;GB18030</PackageTags>
     <PackageId>AOTba</PackageId>
     <IsPackable>true</IsPackable>
     <IncludeBuildOutput>false</IncludeBuildOutput>
