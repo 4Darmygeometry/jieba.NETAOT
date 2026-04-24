@@ -1099,6 +1099,88 @@ namespace JiebaNet.Segmenter.Tests
             }
         }
 
+        [Test]
+        public void TestDateTime_Ratio()
+        {
+            var seg = new JiebaSegmenter();
+
+            // 时间格式测试（严格60进制）
+            var timeTestCases = new (string text, string expected)[]
+            {
+                ("时间是00:30", "00:30"),
+                ("会议在9:30开始", "9:30"),
+                ("时间是14:30:00", "14:30:00"),
+                ("毫秒时间14:30:00.123", "14:30:00.123"),
+            };
+
+            foreach (var (text, expected) in timeTestCases)
+            {
+                var result = seg.Cut(text).ToList();
+                var joined = string.Join("/", result);
+                Console.WriteLine($"[时间] {text} -> {joined}");
+                Assert.That(result, Contains.Item(expected), $"'{expected}'应被识别为时间");
+            }
+
+            // 比值格式测试（任意数字，支持小数）
+            var ratioTestCases = new (string text, string expected)[]
+            {
+                ("比值是100:31", "100:31"),
+                ("比例3:1", "3:1"),
+                ("比分2:0", "2:0"),
+                ("金龙鱼1:1:1调和油", "1:1:1"),
+                ("黄金比例1:1.618", "1:1.618"),
+                ("比例是25:75", "25:75"),
+            };
+
+            foreach (var (text, expected) in ratioTestCases)
+            {
+                var result = seg.Cut(text).ToList();
+                var joined = string.Join("/", result);
+                Console.WriteLine($"[比值] {text} -> {joined}");
+                Assert.That(result, Contains.Item(expected), $"'{expected}'应被识别为比值");
+            }
+        }
+
+        [Test]
+        public void TestDateTime_RatioPosTag()
+        {
+            var posSeg = new PosSegmenter();
+
+            // 时间格式词性标注为"t"
+            var timeText = "时间是14:30";
+            var timeResult = posSeg.Cut(timeText).ToList();
+            var timeJoined = string.Join("/", timeResult.Select(p => $"{p.Word}/{p.Flag}"));
+            Console.WriteLine($"[时间词性] {timeText} -> {timeJoined}");
+            Assert.That(timeResult.Any(p => p.Word == "14:30" && p.Flag == "t"), Is.True, "时间应标注为t");
+
+            // 比值格式词性标注为"n"
+            var ratioText = "比值是100:31";
+            var ratioResult = posSeg.Cut(ratioText).ToList();
+            var ratioJoined = string.Join("/", ratioResult.Select(p => $"{p.Word}/{p.Flag}"));
+            Console.WriteLine($"[比值词性] {ratioText} -> {ratioJoined}");
+            Assert.That(ratioResult.Any(p => p.Word == "100:31" && p.Flag == "n"), Is.True, "比值应标注为n");
+        }
+
+        [Test]
+        public void TestDateTime_ChineseTime()
+        {
+            var seg = new JiebaSegmenter();
+
+            // 测试中文时间表达"八点整"
+            var text1 = "现在是北京时间八点整";
+            var result1 = seg.Cut(text1).ToList();
+            var joined1 = string.Join("/", result1);
+            Console.WriteLine($"[中文时间1] {text1} -> {joined1}");
+            Assert.That(result1, Contains.Item("八点整"), "'八点整'应被识别为时间");
+
+            // 测试中文时间表达"上午六点整"
+            var text2 = "会议在上午六点整开始";
+            var result2 = seg.Cut(text2).ToList();
+            var joined2 = string.Join("/", result2);
+            Console.WriteLine($"[中文时间2] {text2} -> {joined2}");
+            Assert.That(result2, Contains.Item("上午六点整"), "'上午六点整'应被识别为时间");
+        }
+
         #endregion
 #endif
     }
