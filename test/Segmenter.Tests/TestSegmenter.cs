@@ -374,6 +374,121 @@ namespace JiebaNet.Segmenter.Tests
             Assert.That(seg.Cut(text), Is.EqualTo(new[] { text }));
         }
 
+        /// <summary>
+        /// 测试词典中的英文单词不应被拆分
+        /// GitHub和github在词典中，应该作为整体输出
+        /// </summary>
+        [TestCase]
+        [Category("Issue")]
+        public void TestEnglishWordsInDict()
+        {
+            var seg = new JiebaSegmenter();
+            
+            // GitHub在词典中，应该作为整体输出
+            var result1 = seg.Cut("GitHub").ToList();
+            Assert.That(result1, Is.EqualTo(new[] { "GitHub" }), "GitHub在词典中，应该作为整体输出");
+            
+            // github在词典中，应该作为整体输出
+            var result2 = seg.Cut("github").ToList();
+            Assert.That(result2, Is.EqualTo(new[] { "github" }), "github在词典中，应该作为整体输出");
+        }
+
+        /// <summary>
+        /// 测试词典中没有的英文单词应该作为整体输出
+        /// </summary>
+        [TestCase]
+        [Category("Issue")]
+        public void TestEnglishWordsNotInDict()
+        {
+            var seg = new JiebaSegmenter();
+            
+            // GitLab不在词典中，应该作为整体输出
+            var result1 = seg.Cut("GitLab").ToList();
+            Assert.That(result1, Is.EqualTo(new[] { "GitLab" }), "GitLab不在词典中，应该作为整体输出");
+            
+            // Gitee不在词典中，应该作为整体输出
+            var result2 = seg.Cut("Gitee").ToList();
+            Assert.That(result2, Is.EqualTo(new[] { "Gitee" }), "Gitee不在词典中，应该作为整体输出");
+        }
+
+        /// <summary>
+        /// 测试域名应该作为整体输出
+        /// </summary>
+        [TestCase]
+        [Category("Issue")]
+        public void TestDomainNames()
+        {
+            var seg = new JiebaSegmenter();
+            
+            // nuget.org应该作为整体输出
+            var result1 = seg.Cut("nuget.org").ToList();
+            Assert.That(result1, Is.EqualTo(new[] { "nuget.org" }), "nuget.org应该作为整体输出");
+            
+            // www.baidu.com应该作为整体输出
+            var result2 = seg.Cut("www.baidu.com").ToList();
+            Assert.That(result2, Is.EqualTo(new[] { "www.baidu.com" }), "www.baidu.com应该作为整体输出");
+        }
+
+        /// <summary>
+        /// 测试连字符/下划线连接的单词应该作为整体输出
+        /// </summary>
+        [TestCase]
+        [Category("Issue")]
+        public void TestHyphenatedWords()
+        {
+            var seg = new JiebaSegmenter();
+            
+            // TF-IDF应该作为整体输出
+            var result1 = seg.Cut("TF-IDF识别方法").ToList();
+            Assert.That(result1, Is.EqualTo(new[] { "TF-IDF", "识别方法" }), "TF-IDF应该作为整体输出");
+            
+            // word1_word2_word3应该作为整体输出
+            var result2 = seg.Cut("word1_word2_word3").ToList();
+            Assert.That(result2, Is.EqualTo(new[] { "word1_word2_word3" }), "word1_word2_word3应该作为整体输出");
+            
+            // hello-world应该作为整体输出
+            var result3 = seg.Cut("hello-world").ToList();
+            Assert.That(result3, Is.EqualTo(new[] { "hello-world" }), "hello-world应该作为整体输出");
+            
+            // test_case_example应该作为整体输出
+            var result4 = seg.Cut("test_case_example").ToList();
+            Assert.That(result4, Is.EqualTo(new[] { "test_case_example" }), "test_case_example应该作为整体输出");
+        }
+
+        /// <summary>
+        /// 测试完整URL应该作为整体输出
+        /// </summary>
+        [TestCase]
+        [Category("Issue")]
+        public void TestFullUrl()
+        {
+            var seg = new JiebaSegmenter();
+            
+            // https://gitee.com/JTsamsde/AOTba应该作为整体输出
+            var result1 = seg.Cut("https://gitee.com/JTsamsde/AOTba").ToList();
+            Assert.That(result1, Is.EqualTo(new[] { "https://gitee.com/JTsamsde/AOTba" }), "完整URL应该作为整体输出");
+            
+            // http://www.baidu.com/search?q=test应该作为整体输出
+            var result2 = seg.Cut("http://www.baidu.com/search?q=test").ToList();
+            Assert.That(result2, Is.EqualTo(new[] { "http://www.baidu.com/search?q=test" }), "带查询参数的URL应该作为整体输出");
+            
+            // 中文环境中的URL应该正确识别
+            var result3 = seg.Cut("访问https://github.com查看代码").ToList();
+            Assert.That(result3, Is.EqualTo(new[] { "访问", "https://github.com", "查看", "代码" }), "中文环境中的URL应该正确识别");
+            
+            // URL后面跟着中文应该正确识别
+            var result4 = seg.Cut("网址是https://nuget.org/packages/test结束").ToList();
+            Assert.That(result4, Is.EqualTo(new[] { "网址", "是", "https://nuget.org/packages/test", "结束" }), "URL后面跟着中文应该正确识别");
+            
+            // 简写域名带路径应该作为整体输出
+            var result5 = seg.Cut("gitee.com/JTsamsde/AOTba").ToList();
+            Assert.That(result5, Is.EqualTo(new[] { "gitee.com/JTsamsde/AOTba" }), "简写域名带路径应该作为整体输出");
+            
+            // 中文环境中的简写域名带路径应该正确识别
+            var result6 = seg.Cut("访问gitee.com/JTsamsde/AOTba查看代码").ToList();
+            Assert.That(result6, Is.EqualTo(new[] { "访问", "gitee.com/JTsamsde/AOTba", "查看", "代码" }), "中文环境中的简写域名带路径应该正确识别");
+        }
+
         [Test]
         public void TestWordFreq()
         {
