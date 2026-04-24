@@ -237,6 +237,15 @@ namespace JiebaNet.Segmenter
             @"(?:夏|商|秦|[" + C_汉 + @"]|三[" + C_国 + @"]|晋|南北朝|隋|唐|五代|周|宋|元|明|清|民[" + C_国 + @"])(?:朝|代)",
             RegexOptions.Compiled);
 
+        // ========== 18. 版本号 ==========
+        // 格式：v1.0.1、1.0.1、3.2-preview1、4.1.2-rc1、2.1-alpha1、6.3-beta2
+        // 注意：版本号至少两个数字部分，可带预发布标签
+        private static readonly Regex VersionRegex = new(
+            @"(?:v|V)?" +
+            @"\d+\.\d+(?:\.\d+)?" +
+            @"(?:-(?:alpha|beta|rc|preview|pre|dev|snapshot|release|build|hotfix|patch|major|minor|final)\d*)?",
+            RegexOptions.Compiled);
+
         // 优先级数组（按优先级从高到低排列）
         // 相对时间组合（如"明天下午3点"）优先级高于单独的时间（如"下午3点"）
         // 时间格式优先级高于比值格式，确保"14:30"被识别为时间而非比值
@@ -260,6 +269,7 @@ namespace JiebaNet.Segmenter
             (WeekdayRegex, "weekday", 30),
             (TimezoneRegex, "timezone", 25),
             (AnniversaryRegex, "anniversary", 20),
+            (VersionRegex, "version", 15),
         };
 
         /// <summary>
