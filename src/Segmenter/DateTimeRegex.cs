@@ -229,9 +229,10 @@ namespace JiebaNet.Segmenter
             RegexOptions.Compiled);
 
         // ========== 14. 星期 ==========
+        // 注意：英文星期名称需要添加单词边界，避免匹配到其他单词的一部分（如"GitHub"中的"tHu"被匹配为"Thu"）
         private static readonly Regex WeekdayRegex = new(
             @"(?:星期|[" + C_礼 + @"]拜|[" + C_周 + @"])(?<day>[一二三四五六日天1234567])|" +
-            @"(?<day>Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Mon|Tue|Wed|Thu|Fri|Sat|Sun)",
+            @"\b(?<day>Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         // ========== 15. 时区 ==========
@@ -275,6 +276,30 @@ namespace JiebaNet.Segmenter
             @"(?![\d.%])",
             RegexOptions.Compiled);
 
+        // ========== 20. 域名/URL ==========
+        // 格式：https://gitee.com/JTsamsde/AOTba、http://www.baidu.com/search?q=test
+        //       www.example.com/path、example.com/page、sub.example.com、nuget.org
+        // 注意：域名至少包含一个点号，顶级域名至少2个字母
+        // 注意：完整URL包含可选的协议前缀（https://或http://）和可选的路径部分
+        // 注意：路径部分以/开头，直到遇到空格或中文字符为止
+        // 注意：域名边界：前面是中文、空格等非英文数字字符即为左边界
+        // 注意：域名长度限制：每个段最大63字符，总长度最大253字符（正则限制每段，总长度在代码验证）
+        // 注意：域名中大小写没有区分
+        // 注意：使用负向前瞻和后瞻来确保边界正确，支持中文边界
+        private static readonly Regex DomainRegex = new(
+            @"(?<![a-zA-Z0-9])(?:https?://)?(?:[a-zA-Z0-9](?:[-a-zA-Z0-9]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(?:/[^\s\u4E00-\u9FD5]*)?(?![a-zA-Z0-9])",
+            RegexOptions.Compiled);
+
+        // ========== 21. 连字符/下划线连接的单词 ==========
+        // 格式：TF-IDF、word1_word2_word3、hello-world、test_case_example
+        // 注意：至少包含一个连字符或下划线，且至少有两个单词部分
+        // 注意：每个单词部分只能是字母或数字（不包括中文）
+        // 注意：每个单词部分至少需要2个字符，排除单字母缩写（如P-R、A-B）
+        // 注意：使用负向前瞻和后瞻来确保边界正确，支持中文边界
+        private static readonly Regex HyphenatedWordRegex = new(
+            @"(?<![a-zA-Z0-9])[a-zA-Z0-9]{2,}(?:[-_][a-zA-Z0-9]{2,})+(?![a-zA-Z0-9])",
+            RegexOptions.Compiled);
+
         // 优先级数组（按优先级从高到低排列）
         // 相对时间组合（如"明天下午3点"）优先级高于单独的时间（如"下午3点"）
         // 时间格式优先级高于比值格式，确保"14:30"被识别为时间而非比值
@@ -300,6 +325,8 @@ namespace JiebaNet.Segmenter
             (AnniversaryRegex, "anniversary", 20),
             (PercentageRegex, "percentage", 18),
             (VersionRegex, "version", 15),
+            (DomainRegex, "domain", 10),
+            (HyphenatedWordRegex, "hyphenated", 5),
         };
 
         /// <summary>
