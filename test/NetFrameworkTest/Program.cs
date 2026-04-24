@@ -497,6 +497,78 @@ namespace JiebaNet.NetFrameworkTest
                     return false;
                 }
 
+                // 测试12：版本号格式
+                var text12 = "当前版本是v1.0.1";
+                var result12 = segmenter.Cut(text12).ToList();
+                var joined12 = string.Join("/", result12);
+                Console.WriteLine($"  测试12: {text12}");
+                Console.WriteLine($"  结果: {joined12}");
+                if (!result12.Contains("v1.0.1"))
+                {
+                    Console.WriteLine("  失败 ✗ 版本号'v1.0.1'未被正确识别");
+                    return false;
+                }
+
+                // 测试13：版本号（无v前缀）
+                var text13 = "软件版本1.0.1已发布";
+                var result13 = segmenter.Cut(text13).ToList();
+                var joined13 = string.Join("/", result13);
+                Console.WriteLine($"  测试13: {text13}");
+                Console.WriteLine($"  结果: {joined13}");
+                if (!result13.Contains("1.0.1"))
+                {
+                    Console.WriteLine("  失败 ✗ 版本号'1.0.1'未被正确识别");
+                    return false;
+                }
+
+                // 测试14：版本号（带预览标签）
+                var text14 = "这是3.2-preview1版本";
+                var result14 = segmenter.Cut(text14).ToList();
+                var joined14 = string.Join("/", result14);
+                Console.WriteLine($"  测试14: {text14}");
+                Console.WriteLine($"  结果: {joined14}");
+                if (!result14.Contains("3.2-preview1"))
+                {
+                    Console.WriteLine("  失败 ✗ 版本号'3.2-preview1'未被正确识别");
+                    return false;
+                }
+
+                // 测试15：版本号（带rc标签）
+                var text15 = "发布候选版本4.1.2-rc1";
+                var result15 = segmenter.Cut(text15).ToList();
+                var joined15 = string.Join("/", result15);
+                Console.WriteLine($"  测试15: {text15}");
+                Console.WriteLine($"  结果: {joined15}");
+                if (!result15.Contains("4.1.2-rc1"))
+                {
+                    Console.WriteLine("  失败 ✗ 版本号'4.1.2-rc1'未被正确识别");
+                    return false;
+                }
+
+                // 测试16：版本号（带alpha标签）
+                var text16 = "这是2.1-alpha1测试版";
+                var result16 = segmenter.Cut(text16).ToList();
+                var joined16 = string.Join("/", result16);
+                Console.WriteLine($"  测试16: {text16}");
+                Console.WriteLine($"  结果: {joined16}");
+                if (!result16.Contains("2.1-alpha1"))
+                {
+                    Console.WriteLine("  失败 ✗ 版本号'2.1-alpha1'未被正确识别");
+                    return false;
+                }
+
+                // 测试17：版本号（带beta标签）
+                var text17 = "当前是6.3-beta2版本";
+                var result17 = segmenter.Cut(text17).ToList();
+                var joined17 = string.Join("/", result17);
+                Console.WriteLine($"  测试17: {text17}");
+                Console.WriteLine($"  结果: {joined17}");
+                if (!result17.Contains("6.3-beta2"))
+                {
+                    Console.WriteLine("  失败 ✗ 版本号'6.3-beta2'未被正确识别");
+                    return false;
+                }
+
                 Console.WriteLine("  通过 ✓");
                 return true;
             }
