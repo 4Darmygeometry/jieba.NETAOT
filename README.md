@@ -1,6 +1,6 @@
 jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的.NET版本（C#实现），支持AOT编译。
 
-当前版本为1.0.6，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式（如须使用paddle模式，请见https://github.com/sdcb/PaddleSharp/blob/master/docs%2Fpaddlenlp-lac.md ）。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
+当前版本为1.0.7，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式（如须使用paddle模式，请见https://github.com/sdcb/PaddleSharp/blob/master/docs%2Fpaddlenlp-lac.md ）。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
 
 此外，也提供了 `KeywordProcessor`，参考 [FlashText](https://github.com/vi3k6i5/flashtext) 实现。`KeywordProcessor` 可以更灵活地从文本中提取**词典中的关键词**，比如忽略大小写、含空格的词等。
 
@@ -146,6 +146,7 @@ AOT情形下含Emoji句子断句测试
 
 ```
 === AOTba AOT 兼容性测试 ===
+
 [测试] 精确模式分词...
   结果: 我/来到/北京/清华大学
   通过 ✓
@@ -216,6 +217,26 @@ AOT情形下含Emoji句子断句测试
   结果: 这是/2.1-alpha1/测试版
   测试17: 当前是6.3-beta2版本
   结果: 当前/是/6.3-beta2/版本
+  测试18: 2026年1月13日19点03分14秒
+  结果: 2026年1月13日19点03分14秒
+  测试19: 二零二六年一月十三日十九点零三分十四秒
+  结果: 二零二六年一月十三日十九点零三分十四秒
+  测试20: 二零二六年一月十三日十九点二十分十四秒
+  结果: 二零二六年一月十三日十九点二十分十四秒
+  测试21: 十九点二十分十四秒
+  结果: 十九点二十分十四秒
+  测试22: 十九点二十分
+  结果: 十九点二十分
+  测试23: 十九点
+  结果: 十九点
+  测试24: 某人考试得了零分
+  结果: 某人/考试/得/了/零分
+  测试25: 三分天下
+  结果: 三分/天下
+  测试26: 再等十九分二十秒，就要结束考试了
+  结果: 再/等/十九分二十秒/，/就要/结束/考试/了
+  测试27: 再等19分20秒，就要结束考试了
+  结果: 再/等/19分20秒/，/就要/结束/考试/了
   通过 ✓
 [测试] 日期时间词性标注...
   测试1: 今天4:50某某某领了一只记号笔
@@ -241,6 +262,7 @@ AOT情形下含Emoji句子断句测试
   tokenizer1: 小明/最近/在/学习/机器学习
   tokenizer2: 小明/最近/在/学习/机器/学习
   通过 ✓
+
 === 所有AOT测试通过！ ===
 ```
 
