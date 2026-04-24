@@ -91,6 +91,22 @@ namespace JiebaNet.Segmenter
             @"(?<day>\d{1,2}|[一二三四五六七八九十]{1,3})[日号號]?(?!\d)",
             RegexOptions.Compiled);
 
+        // ========== 2.5 中文日期时间组合（日期+时间紧邻，作为整体识别） ==========
+        // 匹配格式：2026年1月13日19点03分14秒、二零二六年一月十三日十九点零三分十四秒
+        // 解决DateChineseRegex和TimeRegex分别匹配导致日期时间被拆分的问题
+        // 注意：日/号是必须的（不同于DateChineseRegex中可选），确保日期和时间紧邻
+        // 注意：中文数字的分钟和秒需要包含零，如"零三分"、"十四秒"
+        private static readonly Regex DateTimeChineseRegex = new(
+            @"(?:^|(?<![\d一二三四五六七八九十〇零]))" +
+            @"(?:(?<year>\d{4}|[一二三四五六七八九十〇零]{4})年)?" +
+            @"(?<month>\d{1,2}|[一二三四五六七八九十]{1,3})月" +
+            @"(?<day>\d{1,2}|[一二三四五六七八九十]{1,3})[日号號]\s*" +
+            @"(?<hour>\d{1,2}|[一二三四五六七八九十零]{1,3})[" + C_点 + C_时 + @"]" +
+            @"(?:\s*(?<minute>\d{1,2}|[一二三四五六七八九十零]{1,3}|半|一刻|三刻|整)[分]?)?" +
+            @"(?:\s*(?<second>\d{1,2}|[一二三四五六七八九十零]{1,3})秒)?" +
+            @"(?![\d一二三四五六七八九十〇零])",
+            RegexOptions.Compiled);
+
         // ========== 3. 农历 ==========
         private static readonly Regex LunarRegex = new(
             @"(?:农历|阴历|農曆)?" +
@@ -263,6 +279,7 @@ namespace JiebaNet.Segmenter
             (DateTimeIsoRegex, "datetime", 100),
             (RangeRegex, "timerange", 95),
             (DeadlineRegex, "deadline", 90),
+            (DateTimeChineseRegex, "datetimex", 87),
             (DateChineseRegex, "date", 85),
             (LunarRegex, "lunardate", 80),
             (TraditionalRegex, "traditional", 75),
