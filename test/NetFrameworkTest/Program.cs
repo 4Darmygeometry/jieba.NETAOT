@@ -425,6 +425,78 @@ namespace JiebaNet.NetFrameworkTest
                     return false;
                 }
 
+                // 测试6：比值格式
+                var text6 = "金龙鱼1:1:1调和油";
+                var result6 = segmenter.Cut(text6).ToList();
+                var joined6 = string.Join("/", result6);
+                Console.WriteLine($"  测试6: {text6}");
+                Console.WriteLine($"  结果: {joined6}");
+                if (!result6.Contains("1:1:1"))
+                {
+                    Console.WriteLine("  失败 ✗ 比值'1:1:1'未被正确识别");
+                    return false;
+                }
+
+                // 测试7：时间与比值混合
+                var text7 = "比值是100:31";
+                var result7 = segmenter.Cut(text7).ToList();
+                var joined7 = string.Join("/", result7);
+                Console.WriteLine($"  测试7: {text7}");
+                Console.WriteLine($"  结果: {joined7}");
+                if (!result7.Contains("100:31"))
+                {
+                    Console.WriteLine("  失败 ✗ 比值'100:31'未被正确识别");
+                    return false;
+                }
+
+                // 测试8：毫秒时间格式
+                var text8 = "毫秒时间14:30:00.123";
+                var result8 = segmenter.Cut(text8).ToList();
+                var joined8 = string.Join("/", result8);
+                Console.WriteLine($"  测试8: {text8}");
+                Console.WriteLine($"  结果: {joined8}");
+                if (!result8.Contains("14:30:00.123"))
+                {
+                    Console.WriteLine("  失败 ✗ 毫秒时间'14:30:00.123'未被正确识别");
+                    return false;
+                }
+
+                // 测试9：小数比值
+                var text9 = "黄金比例1:1.618";
+                var result9 = segmenter.Cut(text9).ToList();
+                var joined9 = string.Join("/", result9);
+                Console.WriteLine($"  测试9: {text9}");
+                Console.WriteLine($"  结果: {joined9}");
+                if (!result9.Contains("1:1.618"))
+                {
+                    Console.WriteLine("  失败 ✗ 小数比值'1:1.618'未被正确识别");
+                    return false;
+                }
+
+                // 测试10：中文时间表达"八点整"
+                var text10 = "现在是北京时间八点整";
+                var result10 = segmenter.Cut(text10).ToList();
+                var joined10 = string.Join("/", result10);
+                Console.WriteLine($"  测试10: {text10}");
+                Console.WriteLine($"  结果: {joined10}");
+                if (!result10.Contains("八点整"))
+                {
+                    Console.WriteLine("  失败 ✗ 中文时间'八点整'未被正确识别");
+                    return false;
+                }
+
+                // 测试11：中文时间表达"上午六点整"
+                var text11 = "会议在上午六点整开始";
+                var result11 = segmenter.Cut(text11).ToList();
+                var joined11 = string.Join("/", result11);
+                Console.WriteLine($"  测试11: {text11}");
+                Console.WriteLine($"  结果: {joined11}");
+                if (!result11.Contains("上午六点整"))
+                {
+                    Console.WriteLine("  失败 ✗ 中文时间'上午六点整'未被正确识别");
+                    return false;
+                }
+
                 Console.WriteLine("  通过 ✓");
                 return true;
             }
@@ -442,18 +514,48 @@ namespace JiebaNet.NetFrameworkTest
             {
                 var posSeg = new PosSegmenter();
 
-                // 测试：时间格式 4:50
-                var text = "今天4:50某某某领了一只记号笔";
-                var result = posSeg.Cut(text).ToList();
-                var joined = string.Join("/", result);
-                Console.WriteLine($"  输入: {text}");
-                Console.WriteLine($"  结果: {joined}");
+                // 测试1：时间格式 4:50
+                var text1 = "今天4:50某某某领了一只记号笔";
+                var result1 = posSeg.Cut(text1).ToList();
+                var joined1 = string.Join("/", result1);
+                Console.WriteLine($"  测试1: {text1}");
+                Console.WriteLine($"  结果: {joined1}");
 
                 // 检查今天4:50是否被识别为时间词性（t）
-                var hasTimeTag = result.Any(p => p.Word.Contains("今天4:50") && p.Flag == "t");
+                var hasTimeTag = result1.Any(p => p.Word.Contains("今天4:50") && p.Flag == "t");
                 if (!hasTimeTag)
                 {
                     Console.WriteLine("  失败 ✗ '今天4:50'未被正确标记为时间词性");
+                    return false;
+                }
+
+                // 测试2：比值格式词性标注
+                var text2 = "比值是100:31";
+                var result2 = posSeg.Cut(text2).ToList();
+                var joined2 = string.Join("/", result2);
+                Console.WriteLine($"  测试2: {text2}");
+                Console.WriteLine($"  结果: {joined2}");
+
+                // 检查100:31是否被识别为比值词性（n）
+                var hasRatioTag = result2.Any(p => p.Word == "100:31" && p.Flag == "n");
+                if (!hasRatioTag)
+                {
+                    Console.WriteLine("  失败 ✗ '100:31'未被正确标记为比值词性（应为n）");
+                    return false;
+                }
+
+                // 测试3：时间格式词性标注
+                var text3 = "时间是14:30";
+                var result3 = posSeg.Cut(text3).ToList();
+                var joined3 = string.Join("/", result3);
+                Console.WriteLine($"  测试3: {text3}");
+                Console.WriteLine($"  结果: {joined3}");
+
+                // 检查14:30是否被识别为时间词性（t）
+                var hasTimeTag2 = result3.Any(p => p.Word == "14:30" && p.Flag == "t");
+                if (!hasTimeTag2)
+                {
+                    Console.WriteLine("  失败 ✗ '14:30'未被正确标记为时间词性（应为t）");
                     return false;
                 }
 
