@@ -237,13 +237,22 @@ namespace JiebaNet.Segmenter
             @"(?:夏|商|秦|[" + C_汉 + @"]|三[" + C_国 + @"]|晋|南北朝|隋|唐|五代|周|宋|元|明|清|民[" + C_国 + @"])(?:朝|代)",
             RegexOptions.Compiled);
 
-        // ========== 18. 版本号 ==========
+        // ========== 18. 百分比 ==========
+        // 格式：数字% 或 数字.数字%（如 5%, 99.99%, 100.5%）
+        // 注意：百分比优先级高于版本号，确保"99.99%"被识别为百分比而非版本号
+        private static readonly Regex PercentageRegex = new(
+            @"\d+(?:\.\d+)?%",
+            RegexOptions.Compiled);
+
+        // ========== 19. 版本号 ==========
         // 格式：v1.0.1、1.0.1、3.2-preview1、4.1.2-rc1、2.1-alpha1、6.3-beta2
         // 注意：版本号至少两个数字部分，可带预发布标签
+        // 注意：版本号后面不能跟"%"（百分比）或其他非版本号字符
         private static readonly Regex VersionRegex = new(
             @"(?:v|V)?" +
             @"\d+\.\d+(?:\.\d+)?" +
-            @"(?:-(?:alpha|beta|rc|preview|pre|dev|snapshot|release|build|hotfix|patch|major|minor|final)\d*)?",
+            @"(?:-(?:alpha|beta|rc|preview|pre|dev|snapshot|release|build|hotfix|patch|major|minor|final)\d*)?" +
+            @"(?![\d.%])",
             RegexOptions.Compiled);
 
         // 优先级数组（按优先级从高到低排列）
@@ -269,6 +278,7 @@ namespace JiebaNet.Segmenter
             (WeekdayRegex, "weekday", 30),
             (TimezoneRegex, "timezone", 25),
             (AnniversaryRegex, "anniversary", 20),
+            (PercentageRegex, "percentage", 18),
             (VersionRegex, "version", 15),
         };
 
