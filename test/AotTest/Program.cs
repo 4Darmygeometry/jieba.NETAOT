@@ -17,7 +17,7 @@ class Program
 
         Console.OutputEncoding = Encoding.UTF8;
 
-        Console.WriteLine("=== jieba.NET AOT 兼容性测试 ===");
+        Console.WriteLine("=== AOTba AOT 兼容性测试 ===");
         Console.WriteLine();
 
         allPassed &= TestCut();
@@ -361,7 +361,7 @@ class Program
 #if AOTBA
     static bool TestDateTimeSegment()
     {
-        Console.WriteLine("[测试] 日期时间分词...");
+        Console.WriteLine("[测试] 日期时间比值版本号分词...");
         try
         {
             var segmenter = new JiebaSegmenter();
