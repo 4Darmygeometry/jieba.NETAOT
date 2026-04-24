@@ -1206,6 +1206,108 @@ namespace JiebaNet.Segmenter.Tests
             }
         }
 
+        /// <summary>
+        /// 测试中文日期时间组合（DateTimeChineseRegex）
+        /// 日期+时间紧邻时应作为整体识别，不应被拆分
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_ChineseDateTimeCombined()
+        {
+            var seg = new JiebaSegmenter();
+
+            // 测试1：阿拉伯数字日期+阿拉伯数字时间
+            var text1 = "2026年1月13日19点03分14秒";
+            var result1 = seg.Cut(text1).ToList();
+            var joined1 = string.Join("/", result1);
+            Console.WriteLine($"[中文日期时间组合1] {text1} -> {joined1}");
+            Assert.That(result1, Contains.Item("2026年1月13日19点03分14秒"), "'2026年1月13日19点03分14秒'应被识别为整体日期时间");
+
+            // 测试2：中文数字日期+中文数字时间（含零）
+            var text2 = "二零二六年一月十三日十九点零三分十四秒";
+            var result2 = seg.Cut(text2).ToList();
+            var joined2 = string.Join("/", result2);
+            Console.WriteLine($"[中文日期时间组合2] {text2} -> {joined2}");
+            Assert.That(result2, Contains.Item("二零二六年一月十三日十九点零三分十四秒"), "'二零二六年一月十三日十九点零三分十四秒'应被识别为整体日期时间");
+
+            // 测试3：中文数字日期+中文数字时间（含二十）
+            var text3 = "二零二六年一月十三日十九点二十分十四秒";
+            var result3 = seg.Cut(text3).ToList();
+            var joined3 = string.Join("/", result3);
+            Console.WriteLine($"[中文日期时间组合3] {text3} -> {joined3}");
+            Assert.That(result3, Contains.Item("二零二六年一月十三日十九点二十分十四秒"), "'二零二六年一月十三日十九点二十分十四秒'应被识别为整体日期时间");
+        }
+
+        /// <summary>
+        /// 测试单独的中文时间表达式（不含日期）
+        /// 中文数字的分钟和秒应被正确识别
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_ChineseTimeOnly()
+        {
+            var seg = new JiebaSegmenter();
+
+            // 测试：单独的中文时间表达式（含中文数字分钟和秒）
+            var text = "十九点二十分十四秒";
+            var result = seg.Cut(text).ToList();
+            var joined = string.Join("/", result);
+            Console.WriteLine($"[单独中文时间] {text} -> {joined}");
+            Assert.That(result, Contains.Item("十九点二十分十四秒"), "'十九点二十分十四秒'应被识别为整体时间");
+        }
+
+        /// <summary>
+        /// 测试更多边缘场景
+        /// </summary>
+        [TestCase]
+        public void TestDateTime_EdgeCases()
+        {
+            var seg = new JiebaSegmenter();
+
+            // 测试1：十九点二十分（只有小时和分钟）
+            var text1 = "十九点二十分";
+            var result1 = seg.Cut(text1).ToList();
+            var joined1 = string.Join("/", result1);
+            Console.WriteLine($"[边缘1] {text1} -> {joined1}");
+            Assert.That(result1, Contains.Item("十九点二十分"), "'十九点二十分'应被识别为整体时间");
+
+            // 测试2：单独十九点（只有小时）
+            var text2 = "十九点";
+            var result2 = seg.Cut(text2).ToList();
+            var joined2 = string.Join("/", result2);
+            Console.WriteLine($"[边缘2] {text2} -> {joined2}");
+            Assert.That(result2, Contains.Item("十九点"), "'十九点'应被识别为整体时间");
+
+            // 测试3：非时间场景"零分"（没有"点"或"时"标识，不应被识别为时间）
+            // 注意："零分"可能是词典中的词，但不应被时间识别器识别
+            var text3 = "某人考试得了零分";
+            var result3 = seg.Cut(text3).ToList();
+            var joined3 = string.Join("/", result3);
+            Console.WriteLine($"[边缘3] {text3} -> {joined3}");
+            // 验证：即使"零分"出现在分词结果中，它也不应被识别为时间实体
+            // 时间识别器要求"点"或"时"作为小时标识，所以"零分"不会被匹配
+            Assert.That(!result3.Any(w => w == "零分" && w.Contains("点")), "'零分'不应被识别为时间（没有'点'或'时'标识）");
+
+            // 测试4：非时间场景"三分"（没有"点"或"时"标识，不应被识别为时间）
+            var text4 = "三分天下";
+            var result4 = seg.Cut(text4).ToList();
+            var joined4 = string.Join("/", result4);
+            Console.WriteLine($"[边缘4] {text4} -> {joined4}");
+            Assert.That(!result4.Any(w => w.Contains("点") || w.Contains("时")), "'三分'不应被识别为时间（没有'点'或'时'标识）");
+
+            // 测试5：中文MM:SS场景（只有分钟和秒，没有小时）
+            var text5 = "再等十九分二十秒，就要结束考试了";
+            var result5 = seg.Cut(text5).ToList();
+            var joined5 = string.Join("/", result5);
+            Console.WriteLine($"[边缘5] {text5} -> {joined5}");
+            Assert.That(result5, Contains.Item("十九分二十秒"), "'十九分二十秒'应被识别为整体时间");
+
+            // 测试6：阿拉伯数字MM:SS场景（只有分钟和秒，没有小时）
+            var text6 = "再等19分20秒，就要结束考试了";
+            var result6 = seg.Cut(text6).ToList();
+            var joined6 = string.Join("/", result6);
+            Console.WriteLine($"[边缘6] {text6} -> {joined6}");
+            Assert.That(result6, Contains.Item("19分20秒"), "'19分20秒'应被识别为整体时间");
+        }
+
         #endregion
 #endif
     }
