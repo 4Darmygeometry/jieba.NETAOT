@@ -41,6 +41,7 @@ class Program
         allPassed &= TestTokenizerIndependentDict();
         allPassed &= TestHyphenatedWords();
         allPassed &= TestDomainNames();
+        allPassed &= TestGB18030ExtendedCJK();
 #endif
 
         Console.WriteLine();
@@ -1062,6 +1063,71 @@ class Program
             if (!result8.Contains("nuget.org"))
             {
                 Console.WriteLine("  失败 ✗ nuget.org未被正确识别");
+                return false;
+            }
+
+            Console.WriteLine("  通过 ✓");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  异常: {ex.Message}");
+            return false;
+        }
+    }
+
+    static bool TestGB18030ExtendedCJK()
+    {
+        Console.WriteLine("[测试] GB18030-2022扩展B-I区生僻字分词...");
+        try
+        {
+            var segmenter = new JiebaSegmenter();
+
+            // 测试1：𰻝𰻝面（扩展G区字符，U+30EDD）
+            var text1 = "我今天吃了𰻝𰻝面，很好吃";
+            var result1 = segmenter.Cut(text1).ToList();
+            var joined1 = string.Join("╱", result1);
+            Console.WriteLine($"  测试1: {text1}");
+            Console.WriteLine($"  结果: {joined1}");
+            if (!result1.Contains("𰻝𰻝面"))
+            {
+                Console.WriteLine("  失败 ✗ '𰻝𰻝面'未被正确识别");
+                return false;
+            }
+
+            // 测试2：𧒽岗（扩展B区字符，U+274BD）
+            var text2 = "南海有轨电车一号线，起点为𧒽岗，终点为林岳东";
+            var result2 = segmenter.Cut(text2).ToList();
+            var joined2 = string.Join("╱", result2);
+            Console.WriteLine($"  测试2: {text2}");
+            Console.WriteLine($"  结果: {joined2}");
+            if (!result2.Contains("𧒽岗"))
+            {
+                Console.WriteLine("  失败 ✗ '𧒽岗'未被正确识别");
+                return false;
+            }
+
+            // 测试3：石𬒔（扩展E区字符，U+2C514）
+            var text3 = "石𬒔是佛山市南海区桂城街道的一个地名";
+            var result3 = segmenter.Cut(text3).ToList();
+            var joined3 = string.Join("╱", result3);
+            Console.WriteLine($"  测试3: {text3}");
+            Console.WriteLine($"  结果: {joined3}");
+            if (!result3.Contains("石𬒔"))
+            {
+                Console.WriteLine("  失败 ✗ '石𬒔'未被正确识别");
+                return false;
+            }
+
+            // 测试4：混合场景
+            var text4 = "从𧒽岗出发，经过石𬒔，最后去吃𰻝𰻝面";
+            var result4 = segmenter.Cut(text4).ToList();
+            var joined4 = string.Join("╱", result4);
+            Console.WriteLine($"  测试4: {text4}");
+            Console.WriteLine($"  结果: {joined4}");
+            if (!result4.Contains("𧒽岗") || !result4.Contains("石𬒔") || !result4.Contains("𰻝𰻝面"))
+            {
+                Console.WriteLine("  失败 ✗ 混合场景生僻字未被正确识别");
                 return false;
             }
 
