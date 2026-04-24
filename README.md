@@ -1,6 +1,6 @@
 jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的.NET版本（C#实现），支持AOT编译。
 
-当前版本为1.0.5，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式（如须使用paddle模式，请见https://github.com/sdcb/PaddleSharp/blob/master/docs%2Fpaddlenlp-lac.md ）。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
+当前版本为1.0.6，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式（如须使用paddle模式，请见https://github.com/sdcb/PaddleSharp/blob/master/docs%2Fpaddlenlp-lac.md ）。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
 
 此外，也提供了 `KeywordProcessor`，参考 [FlashText](https://github.com/vi3k6i5/flashtext) 实现。`KeywordProcessor` 可以更灵活地从文本中提取**词典中的关键词**，比如忽略大小写、含空格的词等。
 
@@ -15,6 +15,7 @@ jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的
 * 支持**繁体分词**
 * 支持添加自定义词典和自定义词
 * 支持lcut与lcutforsearch直接返回列表
+* 支持日期/时间完整分出不被拆开
 * 支持异步加载词典
 * 支持TF-IDF、TextRank算法关键词提取
 * 支持含Emoji句子断句
@@ -167,7 +168,7 @@ AOT情形下含Emoji句子断句测试
   通过 ✓
 [测试] Emoji分词...
   输入: 今天天气真好😀明天去爬山🎉
-  结果: 今天天气/真/好/😀/明天/去/爬山/🎉
+  结果: 今天/天气/真/好/😀/明天/去/爬山/🎉
   通过 ✓
 [测试] 复杂Emoji分词（ZWJ序列、变体选择符、肤色修饰）...
   ZWJ序列: 这是👨‍👨‍👧家庭 -> 这是/👨‍👨‍👧/家庭
@@ -178,6 +179,22 @@ AOT情形下含Emoji句子断句测试
 [测试] 繁体中文分词...
   输入: 我來到北京清華大學
   结果: 我/來到/北京/清華大學
+  通过 ✓
+[测试] 日期时间分词...
+  测试1: 今天4:50某某某领了一只记号笔
+  结果: 今天4:50/某某某/领了/一只/记号笔
+  测试2: 会议时间是2021-01-01 09:00:00
+  结果: 会议/时间/是/2021-01-01 09:00:00
+  测试3: 2021年1月1日是元旦
+  结果: 2021年1月1日/是/元旦
+  测试4: 春节是中国的传统节日
+  结果: 春节/是/中国/的/传统节日
+  测试5: 明天下午3点开会
+  结果: 明天下午3点/开会
+  通过 ✓
+[测试] 日期时间词性标注...
+  输入: 今天4:50某某某领了一只记号笔
+  结果: 今天4:50/t/某某某/r/领/v/了/ul/一只/m/记号笔/n
   通过 ✓
 [测试] lcut 直接返回 List<string>...
   结果: 我/来到/北京/清华大学
