@@ -38,11 +38,13 @@ namespace JiebaNet.Segmenter
 
         #region Regular Expressions
 
-        internal static readonly Regex RegexChineseDefault = new Regex(@"([\u4E00-\u9FD5a-zA-Z0-9+#&\._%·\-]+)", RegexOptions.Compiled);
+        // 使用GB18030_2022的混合块正则，支持扩展B-I区的代理对字符
+        internal static readonly Regex RegexChineseDefault = new Regex(@"(" + GB18030_2022.ChineseMixedBlockPattern + @")", RegexOptions.Compiled);
 
         internal static readonly Regex RegexSkipDefault = new Regex(@"(\r\n|\s)", RegexOptions.Compiled);
 
-        internal static readonly Regex RegexChineseCutAll = new Regex(@"([\u4E00-\u9FD5]+)", RegexOptions.Compiled);
+        // 使用GB18030_2022的中文块正则，支持扩展B-I区的代理对字符
+        internal static readonly Regex RegexChineseCutAll = new Regex(@"(" + GB18030_2022.ChineseBlockPattern + @")", RegexOptions.Compiled);
         internal static readonly Regex RegexSkipCutAll = new Regex(@"[^a-zA-Z0-9+#\n]", RegexOptions.Compiled);
 
         internal static readonly Regex RegexEnglishChars = new Regex(@"[a-zA-Z0-9]", RegexOptions.Compiled);

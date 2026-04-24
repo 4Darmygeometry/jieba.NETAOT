@@ -53,11 +53,11 @@ namespace JiebaNet.Segmenter.Common
         }
 
         /// <summary>
-        /// 检查字符是否为中文字符
+        /// 检查字符是否为中文字符（支持GB18030-2022：基本区和扩展A区）
         /// </summary>
         public static bool IsChineseCharacter(this char c)
         {
-            return c >= '\u4E00' && c <= '\u9FD5';
+            return GB18030_2022.IsChineseCharacter(c);
         }
 
         /// <summary>
