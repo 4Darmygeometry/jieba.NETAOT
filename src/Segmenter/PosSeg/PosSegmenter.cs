@@ -209,8 +209,10 @@ namespace JiebaNet.Segmenter.PosSeg
                     }
                 }
 
-                // 添加日期时间实体作为整体，词性标记为"t"（时间）
-                result.Add(new Pair(entity.Text, "t"));
+                // 添加日期时间实体作为整体
+                // 词性标记：时间类型标"t"，比值类型标"n"
+                var posTag = entity.Type == "ratio" ? "n" : "t";
+                result.Add(new Pair(entity.Text, posTag));
                 lastEnd = entity.End;
             }
 
