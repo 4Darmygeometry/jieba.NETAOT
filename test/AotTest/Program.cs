@@ -572,6 +572,128 @@ class Program
                 return false;
             }
 
+            // 测试18：中文日期时间组合（阿拉伯数字日期+阿拉伯数字时间）
+            var text18 = "2026年1月13日19点03分14秒";
+            var result18 = segmenter.Cut(text18).ToList();
+            var joined18 = string.Join("/", result18);
+            Console.WriteLine($"  测试18: {text18}");
+            Console.WriteLine($"  结果: {joined18}");
+            if (!result18.Contains("2026年1月13日19点03分14秒"))
+            {
+                Console.WriteLine("  失败 ✗ '2026年1月13日19点03分14秒'未被正确识别为整体日期时间");
+                return false;
+            }
+
+            // 测试19：中文日期时间组合（中文数字日期+中文数字时间，含零）
+            var text19 = "二零二六年一月十三日十九点零三分十四秒";
+            var result19 = segmenter.Cut(text19).ToList();
+            var joined19 = string.Join("/", result19);
+            Console.WriteLine($"  测试19: {text19}");
+            Console.WriteLine($"  结果: {joined19}");
+            if (!result19.Contains("二零二六年一月十三日十九点零三分十四秒"))
+            {
+                Console.WriteLine("  失败 ✗ '二零二六年一月十三日十九点零三分十四秒'未被正确识别为整体日期时间");
+                return false;
+            }
+
+            // 测试20：中文日期时间组合（中文数字日期+中文数字时间，含二十）
+            var text20 = "二零二六年一月十三日十九点二十分十四秒";
+            var result20 = segmenter.Cut(text20).ToList();
+            var joined20 = string.Join("/", result20);
+            Console.WriteLine($"  测试20: {text20}");
+            Console.WriteLine($"  结果: {joined20}");
+            if (!result20.Contains("二零二六年一月十三日十九点二十分十四秒"))
+            {
+                Console.WriteLine("  失败 ✗ '二零二六年一月十三日十九点二十分十四秒'未被正确识别为整体日期时间");
+                return false;
+            }
+
+            // 测试21：单独的中文时间表达式（不含日期，含中文数字分钟和秒）
+            var text21 = "十九点二十分十四秒";
+            var result21 = segmenter.Cut(text21).ToList();
+            var joined21 = string.Join("/", result21);
+            Console.WriteLine($"  测试21: {text21}");
+            Console.WriteLine($"  结果: {joined21}");
+            if (!result21.Contains("十九点二十分十四秒"))
+            {
+                Console.WriteLine("  失败 ✗ '十九点二十分十四秒'未被正确识别为整体时间");
+                return false;
+            }
+
+            // 测试22：十九点二十分（只有小时和分钟）
+            var text22 = "十九点二十分";
+            var result22 = segmenter.Cut(text22).ToList();
+            var joined22 = string.Join("/", result22);
+            Console.WriteLine($"  测试22: {text22}");
+            Console.WriteLine($"  结果: {joined22}");
+            if (!result22.Contains("十九点二十分"))
+            {
+                Console.WriteLine("  失败 ✗ '十九点二十分'未被正确识别为整体时间");
+                return false;
+            }
+
+            // 测试23：单独十九点（只有小时）
+            var text23 = "十九点";
+            var result23 = segmenter.Cut(text23).ToList();
+            var joined23 = string.Join("/", result23);
+            Console.WriteLine($"  测试23: {text23}");
+            Console.WriteLine($"  结果: {joined23}");
+            if (!result23.Contains("十九点"))
+            {
+                Console.WriteLine("  失败 ✗ '十九点'未被正确识别为整体时间");
+                return false;
+            }
+
+            // 测试24：非时间场景"零分"
+            var text24 = "某人考试得了零分";
+            var result24 = segmenter.Cut(text24).ToList();
+            var joined24 = string.Join("/", result24);
+            Console.WriteLine($"  测试24: {text24}");
+            Console.WriteLine($"  结果: {joined24}");
+            // "零分"不应被识别为时间（没有"点"或"时"标识）
+            if (result24.Any(w => w == "零分" && w.Contains("点")))
+            {
+                Console.WriteLine("  失败 ✗ '零分'不应被识别为时间");
+                return false;
+            }
+
+            // 测试25：非时间场景"三分天下"
+            var text25 = "三分天下";
+            var result25 = segmenter.Cut(text25).ToList();
+            var joined25 = string.Join("/", result25);
+            Console.WriteLine($"  测试25: {text25}");
+            Console.WriteLine($"  结果: {joined25}");
+            // "三分"不应被识别为时间（没有"点"或"时"标识）
+            if (result25.Any(w => w.Contains("点") || w.Contains("时")))
+            {
+                Console.WriteLine("  失败 ✗ '三分'不应被识别为时间");
+                return false;
+            }
+
+            // 测试26：中文MM:SS场景（只有分钟和秒，没有小时）
+            var text26 = "再等十九分二十秒，就要结束考试了";
+            var result26 = segmenter.Cut(text26).ToList();
+            var joined26 = string.Join("/", result26);
+            Console.WriteLine($"  测试26: {text26}");
+            Console.WriteLine($"  结果: {joined26}");
+            if (!result26.Contains("十九分二十秒"))
+            {
+                Console.WriteLine("  失败 ✗ '十九分二十秒'未被正确识别为整体时间");
+                return false;
+            }
+
+            // 测试27：阿拉伯数字MM:SS场景（只有分钟和秒，没有小时）
+            var text27 = "再等19分20秒，就要结束考试了";
+            var result27 = segmenter.Cut(text27).ToList();
+            var joined27 = string.Join("/", result27);
+            Console.WriteLine($"  测试27: {text27}");
+            Console.WriteLine($"  结果: {joined27}");
+            if (!result27.Contains("19分20秒"))
+            {
+                Console.WriteLine("  失败 ✗ '19分20秒'未被正确识别为整体时间");
+                return false;
+            }
+
             Console.WriteLine("  通过 ✓");
             return true;
         }
