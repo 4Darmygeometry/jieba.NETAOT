@@ -1138,13 +1138,25 @@ namespace JiebaNet.NetFrameworkTest
                     return false;
                 }
 
-                // 测试4：混合场景
-                var text4 = "从𧒽岗出发，经过石𬒔，最后去吃𰻝𰻝面";
+                // 测试4：半𮱻（扩展I区字符，U+2EC7B，U+5F84的日本新字体字形）
+                var text4 = "半径的日本新字体字形是半𮱻，繁体写作半徑";
                 var result4 = segmenter.Cut(text4).ToList();
                 var joined4 = string.Join("╱", result4);
                 Console.WriteLine($"  测试4: {text4}");
                 Console.WriteLine($"  结果: {joined4}");
-                if (!result4.Contains("𧒽岗") || !result4.Contains("石𬒔") || !result4.Contains("𰻝𰻝面"))
+                if (!result4.Contains("半𮱻"))
+                {
+                    Console.WriteLine("  失败 ✗ '半𮱻'未被正确识别");
+                    return false;
+                }
+
+                // 测试5：混合场景
+                var text5 = "从𧒽岗出发，经过石𬒔，最后去吃𰻝𰻝面";
+                var result5 = segmenter.Cut(text5).ToList();
+                var joined5 = string.Join("╱", result5);
+                Console.WriteLine($"  测试5: {text5}");
+                Console.WriteLine($"  结果: {joined5}");
+                if (!result5.Contains("𧒽岗") || !result5.Contains("石𬒔") || !result5.Contains("𰻝𰻝面"))
                 {
                     Console.WriteLine("  失败 ✗ 混合场景生僻字未被正确识别");
                     return false;
