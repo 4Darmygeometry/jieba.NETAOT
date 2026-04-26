@@ -19,7 +19,7 @@
 如果您在开发中遇到与分词有关的需求或困难，请提交一个issue，I see u!</description>
     <summary>AOTba是支持AOT编译的jieba.NET中文分词库，支持emoji分词和繁体中文。</summary>
     <releaseNotes>1. 支持AOT编译；2. 支持emoji分词（包括ZWJ序列、变体选择符、肤色修饰符等复杂emoji）；3. 支持繁体中文分词；4. 使用System.Text.Json替代Newtonsoft.Json</releaseNotes>
-    <tags>NLP, TextSegmentation, WordSegmentation, AOT, Emoji, TraditionalChinese, jieba</tags>
+    <tags>NLP, TextSegmentation, WordSegmentation, AOT, Emoji, jieba, GB18030-2022, TraditionalChinese</tags>
     <dependencies>
       <group targetFramework=".NETFramework4.8">
         <dependency id="System.Text.Json" version="10.0.6" />
