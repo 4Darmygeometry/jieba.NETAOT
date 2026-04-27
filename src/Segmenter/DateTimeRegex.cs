@@ -61,9 +61,7 @@ namespace JiebaNet.Segmenter
         private const string C_学 = "学學";
         private const string C_属 = "属屬";
         private const string C_种 = "种種";
-        private const string C_惊 = "惊驚";
         private const string C_季 = "季";
-        private const string C_蛰 = "蛰蟄";
         private const string C_东 = "东東";
         private const string C_汉 = "汉漢";
         private const string C_谷 = "谷穀";
@@ -74,6 +72,28 @@ namespace JiebaNet.Segmenter
         private const string C_华 = "华華";
         private const string C_寿 = "寿壽";
         private const string C_财 = "财財";
+        // ========== 简繁通用词语（使用|分隔，直接用于正则） ==========
+        private const string C_惊蛰 = "惊蛰|驚蟄";
+        private const string C_软件 = "软件|軟體";
+        private const string C_系统 = "系统|系統";
+        private const string C_固件 = "固件|韌體";
+        private const string C_应用 = "应用|應用";
+        private const string C_程序 = "程序|程式";
+        private const string C_产品 = "产品|產品";
+        private const string C_当前 = "当前|當前";
+        private const string C_旧 = "旧|舊";
+        private const string C_稳定 = "稳定|穩定";
+        private const string C_测试 = "测试|測試";
+        private const string C_开发 = "开发|開發";
+        private const string C_预览 = "预览|預覽";
+        private const string C_候选 = "候选|候選";
+        // ========== 版本号共有部分 ==========
+        // 版本号核心（如1.0、3.2.1）
+        private const string V_Core = @"\d+\.\d+(?:\.\d+)?";
+        // 预发布标签（如-alpha1、-beta2、-rc1）
+        private const string V_Prerelease = @"(?:-(?:alpha|beta|rc|preview|pre|dev|snapshot|release|build|hotfix|patch|major|minor|final|batch)\d*)?";
+        // 中文后缀（如版本、版、旧版本）- 使用静态只读字段因为引用了非常量属性
+        private static readonly string V_ChineseSuffix = @"(?:" + GB18030_2022.ChineseQuantifierPattern + @"*?版(?:本?))";
 
         // ========== 1. ISO 日期时间 ==========
         // 匹配格式：2021-01-01, 2021/01/01, 2021-01-01 09:00:00, 2021-01-01T09:00:00Z 等
@@ -119,17 +139,15 @@ namespace JiebaNet.Segmenter
             RegexOptions.Compiled);
 
         // ========== 4. 节日 ==========
+        // 注意：传统节日和现代节日统一用C_节后缀合并，不带"节"的单独列出
+        // 注意：使用单字C变量支持繁体（如重陽節、臘八節、婦女節等）
         private static readonly Regex FestivalRegex = new(
-            @"春[" + C_节 + @"]|元宵[" + C_节 + @"]|端午[" + C_节 + @"]|七夕|中秋[" + C_节 + 
-            @"]|重[" + C_阳 + @"][" + C_节 + @"]|[" + C_腊 + @"]八[" + C_节 + @"]|小年|除夕|" +
-            @"元旦|情人[" + C_节 + @"]|[" + C_妇 + @"]女[" + C_节 + @"]|[" + C_劳 + @"][" + C_动 + @"][" + C_节 + 
-            @"]|[" + C_儿 + @"]童[" + C_节 + @"]|教[" + C_师 + @"][" + C_节 + @"]|[" + C_国 + @"][" + C_庆 + @"][" + C_节 + 
-            @"]|[" + C_圣 + @"][" + C_诞 + @"][" + C_节 + @"]|感恩[" + C_节 + @"]|母[" + C_亲 + @"][" + C_节 + @"]|父[" + C_亲 + @"][" + C_节 + @"]",
+            @"(?:春|元宵|端午|中秋|重[" + C_阳 + @"]|[" + C_腊 + @"]八|情人|[" + C_妇 + @"]女|[" + C_劳 + @"][" + C_动 + @"]|[" + C_儿 + @"]童|教[" + C_师 + @"]|[" + C_国 + @"][" + C_庆 + @"]|[" + C_圣 + @"][" + C_诞 + @"]|感恩|母[" + C_亲 + @"]|父[" + C_亲 + @"])[" + C_节 + @"]|七夕|小年|除夕|元旦",
             RegexOptions.Compiled);
 
         // ========== 5. 节气 ==========
         private static readonly Regex SolarTermRegex = new(
-            @"立春|雨水|[" + C_惊 + @"][" + C_蛰 + @"]|春分|清明|[" + C_谷 + @"]雨" +
+            @"立春|雨水|" + C_惊蛰 + @"|春分|清明|[" + C_谷 + @"]雨|" +
             @"|立夏|小[" + C_满 + @"]|芒[" + C_种 + @"]|夏至|小暑|大暑|" +
             @"立秋|[" + C_处 + @"]暑|白露|秋分|寒露|霜降|立冬|小雪|大雪|冬至|小寒|大寒",
             RegexOptions.Compiled);
@@ -259,10 +277,12 @@ namespace JiebaNet.Segmenter
 
         // ========== 15. 时区 ==========
         // 注意：'北京时间'需完整匹配'北京+时间/時間'，避免被分词器拆成'北京时/间'
+        // 注意：城市名统一用C_时C_间后缀合并
+        // 注意：东西区合并，支持中文数字和阿拉伯数字（如东八区、东8区、西12区）
         private static readonly Regex TimezoneRegex = new(
             @"UTC[+-]\d{1,2}(?::?\d{2})?|GMT[+-]?\d{1,2}?|CST|EST|PST|MST|JST|IST|CET|" +
-            @"北京[" + C_时 + @"][" + C_间 + @"]?|[" + C_东 + @"]京[" + C_时 + @"][" + C_间 + @"]?|[" + C_纽 + @"][" + C_约 + @"][" + C_时 + @"][" + C_间 + @"]?|[" + C_伦 + @"]敦[" + C_时 + @"][" + C_间 + @"]?|巴黎[" + C_时 + @"][" + C_间 + @"]?|悉尼[" + C_时 + @"][" + C_间 + @"]?|莫斯科[" + C_时 + @"][" + C_间 + @"]?|" +
-            @"[" + C_东 + @"][一二三四五六七八九十]{1,2}区|西[一二三四五六七八九十]{1,2}区",
+            @"(?:北京|[" + C_东 + @"]京|[" + C_纽 + @"][" + C_约 + @"]|[" + C_伦 + @"]敦|巴黎|悉尼|莫斯科)[" + C_时 + @"][" + C_间 + @"]?|" +
+            @"[" + C_东 + @"|西](?:[一二三四五六七八九十]{1,2}|\d{1,2})区",
             RegexOptions.Compiled);
 
         // ========== 16. 纪念日 ==========
@@ -297,20 +317,22 @@ namespace JiebaNet.Segmenter
         //   - v/V前缀：v1.0.1、V2.0
         // 注意：v/V前缀的版本号后面可跟中文上下文（如v3.2.1版本），需整体匹配
         // 注意：中文部分使用ChineseQuantifierPattern匹配不定长中文（含GB18030-2022扩展B-I区生僻字）
+        // 注意：使用V_Core、V_Prerelease、V_ChineseSuffix常量避免重复
         private static readonly Regex VersionRegex = new(
-            // 模式1：v/V前缀版本号（可跟可选中文上下文，如v3.2.1版本、v2.0旧版本）
-            @"(?:v|V)\d+\.\d+(?:\.\d+)?" +
-            @"(?:-(?:alpha|beta|rc|preview|pre|dev|snapshot|release|build|hotfix|patch|major|minor|final|batch)\d*)?" +
-            @"(?:" + GB18030_2022.ChineseQuantifierPattern + @"*?版(?:本?))?" +
+            // 模式1：v/V前缀版本号（中文上下文可选）
+            @"(?:v|V)" + V_Core + V_Prerelease + V_ChineseSuffix + @"?" +
             @"(?![\d.%])" +
-            // 模式2：前置中文上下文+版本号（如版本1.0、版本号2.0、旧版本3.0）
-            @"|(?:" + GB18030_2022.ChineseQuantifierPattern + @"*?版本?号?)\d+\.\d+(?:\.\d+)?" +
-            @"(?:-(?:alpha|beta|rc|preview|pre|dev|snapshot|release|build|hotfix|patch|major|minor|final|batch)\d*)?" +
+            // 模式2：无前缀版本号（必须有中文上下文）
+            @"|" + V_Core + V_Prerelease + V_ChineseSuffix +
             @"(?![\d.%])" +
-            // 模式3：版本号+后置中文上下文（如1.0版本、3.0版、5.2旧版本、2.1老版本、2.2xx版本）
-            @"|\d+\.\d+(?:\.\d+)?" +
-            @"(?:-(?:alpha|beta|rc|preview|pre|dev|snapshot|release|build|hotfix|patch|major|minor|final|batch)\d*)?" +
-            @"(?:" + GB18030_2022.ChineseQuantifierPattern + @"*?版(?:本?))" +
+            // 模式3：前置固定中文上下文+版本号（如版本1.0、候选版本4.1.2-rc1）
+            // 注意：前置上下文只能匹配固定词汇，不能无限贪婪匹配任意中文字符
+            @"|(?:" +
+            @"版本(?:号?|名称|标识)|" +
+            @"(?:" + C_软件 + @"|" + C_系统 + @"|" + C_固件 + @"|" + C_应用 + @"|" + C_程序 + @"|" + C_产品 + @"|" +
+            C_当前 + @"|最新|[" + C_旧 + @"]|老|新|" + C_稳定 + @"|" + C_测试 + @"|" + C_开发 + @"|" + C_预览 + @"|" + C_候选 + @"|" +
+            @"(?:alpha|beta|rc|release))版本" +
+            @")" + V_Core + V_Prerelease +
             @"(?![\d.%])",
             RegexOptions.Compiled);
 
