@@ -43,6 +43,7 @@ class Program
         allPassed &= TestHyphenatedWords();
         allPassed &= TestDomainNames();
         allPassed &= TestGB18030ExtendedCJK();
+        allPassed &= TestEntityProtectDisabled();
 #endif
 
         Console.WriteLine();
@@ -1169,6 +1170,80 @@ class Program
             if (!result5.Contains("𧒽岗") || !result5.Contains("石𬒔") || !result5.Contains("𰻝𰻝面"))
             {
                 Console.WriteLine("  失败 ✗ 混合场景生僻字未被正确识别");
+                return false;
+            }
+
+            Console.WriteLine("  通过 ✓");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  异常: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 测试EntityProtect.Disabled配置（用于OpenCC繁简转换）
+    /// 禁用实体保护后，日期、时间、版本号、域名等实体会被拆分而不是整体保护
+    /// </summary>
+    static bool TestEntityProtectDisabled()
+    {
+        Console.WriteLine("[测试] EntityProtect.Disabled 禁用实体保护（OpenCC场景）...");
+        try
+        {
+            // 使用EntityProtect.Disabled配置创建分词器
+            var config = new JiebaConfig(EntityProtect.Disabled);
+            var segmenter = new JiebaSegmenter(config);
+
+            // 测试1：日期时间实体应该被拆分
+            var text1 = "2026年4月30日晚上9点开会";
+            var result1 = segmenter.Cut(text1).ToList();
+            var joined1 = string.Join("╱", result1);
+            Console.WriteLine($"  测试1: {text1}");
+            Console.WriteLine($"  结果: {joined1}");
+            // 禁用实体保护后，日期时间应该被拆分成多个词
+            if (result1.Contains("2026年4月30日晚上9点"))
+            {
+                Console.WriteLine("  失败 ✗ 日期时间实体未被拆分（应禁用实体保护）");
+                return false;
+            }
+
+            // 测试2：版本号应该被拆分
+            var text2 = "软件版本1.0.1已发布";
+            var result2 = segmenter.Cut(text2).ToList();
+            var joined2 = string.Join("╱", result2);
+            Console.WriteLine($"  测试2: {text2}");
+            Console.WriteLine($"  结果: {joined2}");
+            // 禁用实体保护后，版本号应该被拆分
+            if (result2.Contains("软件版本1.0.1"))
+            {
+                Console.WriteLine("  失败 ✗ 版本号实体未被拆分（应禁用实体保护）");
+                return false;
+            }
+
+            // 测试3：域名应该被拆分
+            var text3 = "访问https://github.com查看代码";
+            var result3 = segmenter.Cut(text3).ToList();
+            var joined3 = string.Join("╱", result3);
+            Console.WriteLine($"  测试3: {text3}");
+            Console.WriteLine($"  结果: {joined3}");
+            // 禁用实体保护后，域名应该被拆分
+            if (result3.Contains("https://github.com"))
+            {
+                Console.WriteLine("  失败 ✗ 域名实体未被拆分（应禁用实体保护）");
+                return false;
+            }
+
+            // 测试4：普通文本分词仍然正常
+            var text4 = "我来到北京清华大学";
+            var result4 = segmenter.Cut(text4).ToList();
+            var joined4 = string.Join("╱", result4);
+            Console.WriteLine($"  测试4: {text4}");
+            Console.WriteLine($"  结果: {joined4}");
+            if (!result4.Contains("清华大学"))
+            {
+                Console.WriteLine("  失败 ✗ 普通文本分词异常");
                 return false;
             }
 
