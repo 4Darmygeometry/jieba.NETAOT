@@ -30,6 +30,7 @@ class Program
         allPassed &= TestEmojiSegment();
         allPassed &= TestComplexEmojiSegment();
         allPassed &= TestTraditionalChineseSegment();
+        allPassed &= TestUnicode16EmojiSegment();
 
 #if AOTBA
         allPassed &= TestDateTimeSegment();
@@ -352,6 +353,34 @@ class Program
                 return true;
             }
             Console.WriteLine("  失败 ✗ 繁体中文未被正确识别");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  异常: {ex.Message}");
+            return false;
+        }
+    }
+
+    static bool TestUnicode16EmojiSegment()
+    {
+        Console.WriteLine("[测试] Unicode 16.0 Emoji分词（指纹🫆）...");
+        try
+        {
+            var segmenter = new JiebaSegmenter();
+            var text = "这是我的🫆指纹";
+            var result = segmenter.Cut(text).ToList();
+            var joined = string.Join("╱", result);
+            Console.WriteLine($"  输入: {text}");
+            Console.WriteLine($"  结果: {joined}");
+            var hasEmoji = result.Any(w => w == "🫆");
+            if (hasEmoji)
+            {
+                Console.WriteLine("  通过 ✓");
+                return true;
+            }
+            Console.WriteLine($"  分词结果数量: {result.Count}");
+            Console.WriteLine("  失败 ✗ Unicode 16.0 emoji未被正确识别");
             return false;
         }
         catch (Exception ex)
