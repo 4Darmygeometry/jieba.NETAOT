@@ -22,8 +22,10 @@ jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的
 * 支持版本号提取（如v1.0.1、1.0.1、3.2-preview1、4.1.2-rc1、2.1-alpha1、6.3-beta2）
 * 支持异步加载词典
 * 支持TF-IDF、TextRank算法关键词提取
+* 支持日期、时间、链接、版本号等实体提取
 * 支持含Emoji句子断句
 * 支持带变体选择符和ZWJ的复杂emoji断句（甚至支持到Unicode 16的emoji）
+* 支持开启或关闭实体保护，以便OpenCC.NET调用
 * 全面支持GB18030-2022及一号文要求（基本区到扩展I区汉字处理能力）
 * 可AOT编译
 * 1.0.9及以前为 MIT 授权协议，1.0.10及以上为 Apache 2.0 与 MIT 双授权协议，可以商用闭源发布
@@ -80,12 +82,13 @@ JiebaNet.Segmenter.ConfigManager.ConfigFileBaseDir = @"C:\jiebanet\config";
 
 * 另外，jieba.NETAOT支持Tokenizer 自定义分词器（独立词典），如：
 ```c#
+// 注意：关闭emoji处理的API已于1.0.10版本废除，改为自动判断emoji.txt是否存在
 // 仅加载简体中文词库 + 支持表情包处理
 var config = new JiebaConfig(JiebaMode.ZhHans);
 var segmenter = new JiebaSegmenter(config);
 
-// 仅加载繁体中文词库 + 不支持表情包处理
-var config = new JiebaConfig(JiebaMode.ZhHant, EmojiMode.Disabled);
+// 不进行实体（日期、时间等）保护（适用于OpenCC.NET调用）
+var config = new JiebaConfig(EntityProtect.Disabled);
 var segmenter = new JiebaSegmenter(config);
 
 //若 var segmenter = new JiebaSegmenter(); 则为全量加载
@@ -157,7 +160,7 @@ AOT情形下含Emoji句子断句测试
   结果: 我╱来到╱北京╱清华╱清华大学╱华大╱大学
   通过 ✓
 [测试] 搜索引擎模式分词...
-  结果: 小明╱硕士╱毕业╱于╱中国╱科学╱学院╱科学院╱中国科学院╱计算╱计算所╱，╱后╱在╱日本╱京都╱大学╱日本京都大学╱深造
+  结果: 小明╱硕士╱毕业╱于╱中国╱科学╱学院╱科学院╱中国科学院╱计算╱计 算所╱，╱后╱在╱日本╱京都╱大学╱日本京都大学╱深造
   通过 ✓
 [测试] 词性标注...
   结果: 我/r╱爱/v╱北京/ns╱天安门/ns
@@ -215,15 +218,15 @@ AOT情形下含Emoji句子断句测试
   测试12: 当前版本是v1.0.1
   结果: 当前╱版本╱是╱v1.0.1
   测试13: 软件版本1.0.1已发布
-  结果: 软件╱版本╱1.0.1╱已╱发布
+  结果: 软件版本1.0.1╱已╱发布
   测试14: 这是3.2-preview1版本
-  结果: 这是╱3.2-preview1╱版本
+  结果: 这是╱3.2-preview1版本
   测试15: 发布候选版本4.1.2-rc1
-  结果: 发布╱候选╱版本╱4.1.2-rc1
+  结果: 发布╱候选版本4.1.2-rc1
   测试16: 这是2.1-alpha1测试版
-  结果: 这是╱2.1-alpha1╱测试版
+  结果: 这是╱2.1-alpha1测试版
   测试17: 当前是6.3-beta2版本
-  结果: 当前╱是╱6.3-beta2╱版本
+  结果: 当前╱是╱6.3-beta2版本
   测试18: 2026年1月13日19点03分14秒
   结果: 2026年1月13日19点03分14秒
   测试19: 二零二六年一月十三日十九点零三分十四秒
@@ -257,7 +260,7 @@ AOT情形下含Emoji句子断句测试
   结果: 我╱来到╱北京╱清华大学
   通过 ✓
 [测试] lcut_for_search 直接返回 List<string>...
-  结果: 小明╱硕士╱毕业╱于╱中国╱科学╱学院╱科学院╱中国科学院╱计算╱计算所
+  结果: 小明╱硕士╱毕业╱于╱中国╱科学╱学院╱科学院╱中国科学院╱计算╱计 算所
   通过 ✓
 [测试] Tokenizer 自定义分词器...
   结果: 我╱来到╱北京╱清华大学
@@ -301,13 +304,23 @@ AOT情形下含Emoji句子断句测试
   测试1: 我今天吃了𰻝𰻝面，很好吃
   结果: 我╱今天╱吃╱了╱𰻝𰻝面╱，╱很╱好吃
   测试2: 南海有轨电车一号线，起点为𧒽岗，终点为林岳东
-  结果: 南海有轨电车一号线╱，╱起点╱为╱𧒽岗╱，╱终点╱为╱林岳东
+  结果: 南海有轨电车一号线╱，╱起点╱为╱𧒽岗╱，╱终点╱为╱林岳东       
   测试3: 石𬒔是佛山市南海区桂城街道的一个地名
   结果: 石𬒔╱是╱佛山市╱南海区╱桂城街道╱的╱一个╱地名
   测试4: 半径的日本新字体字形是半𮱻，繁体写作半徑
   结果: 半径╱的╱日本新字体╱字形╱是╱半𮱻╱，╱繁体╱写作╱半徑
   测试5: 从𧒽岗出发，经过石𬒔，最后去吃𰻝𰻝面
   结果: 从╱𧒽岗╱出发╱，╱经过╱石𬒔╱，╱最后╱去╱吃╱𰻝𰻝面
+  通过 ✓
+[测试] EntityProtect.Disabled 禁用实体保护（OpenCC场景）...        
+  测试1: 2026年4月30日晚上9点开会
+  结果: 2026╱年╱4╱月╱30╱日╱晚上╱9╱点╱开会
+  测试2: 软件版本1.0.1已发布
+  结果: 软件╱版本╱1.0╱.╱1╱已╱发布
+  测试3: 访问https://github.com查看代码
+  结果: 访问╱https╱:╱/╱/╱github╱.╱com╱查看╱代码
+  测试4: 我来到北京清华大学
+  结果: 我╱来到╱北京╱清华大学
   通过 ✓
 
 === 所有AOT测试通过！ ===
@@ -504,4 +517,152 @@ var keywords = kp.ExtractKeywords("你需要通过cet-4考试，学习c语言、
 // new List<string> { "cet-4", "c语言", ".NET core", "网络 编程", "字典 tree"}
 ```
 
+### 13. 实体提取
 
+可以提取日期、时间、域名、版本号等多种实体
+
+代码示例：
+```c#
+using JiebaNet.Segmenter;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+class TimeRecognizerDemo
+{
+    static void Main(string[] args)
+    {
+        Console.OutputEncoding = Encoding.UTF8;
+        Console.WriteLine("=== AOTba ITimeRecognizer 实体提取演示 ===\n");
+
+        ITimeRecognizer recognizer = new RegexTimeRecognizer();
+
+        // ========== 1. 职场沟通场景 ==========
+        Console.WriteLine("【场景一：项目排期会议】");
+        var workText = "王总，需求评审定在下周四上午10点，开发周期约3个工作日，" +
+                      "联调安排在Q2，最终版本用v2.5.0-rc2，" +
+                      "deadline是2025-06-30，有问题随时找我，" +
+                      "文档发你邮箱了，参考https://wiki.company.com/project-x";
+        ExtractAndShow(recognizer, workText);
+
+        // ========== 2. 社交聊天场景 ==========
+        Console.WriteLine("【场景二：朋友约饭】");
+        var chatText = "今晚8点半老地方见，我大概7:15下班，" +
+                      "要是堵车就推迟到8点，" +
+                      "对了，那家店在𧒽岗地铁站B口，" +
+                      "上次吃的𰻝𰻝面真不错😋";
+        ExtractAndShow(recognizer, chatText);
+
+        // ========== 3. 电商客服场景 ==========
+        Console.WriteLine("【场景三：售后沟通】");
+        var serviceText = "亲，您的订单预计明天下午送达，" +
+                         "物流显示已到佛山市南海区桂城街道转运中心，" +
+                         "促销价是原价的85%，" +
+                         "商品版本是2024款，" +
+                         "有问题请联系www.taobao.com/shop/help";
+        ExtractAndShow(recognizer, serviceText);
+
+        // ========== 4. 技术讨论场景 ==========
+        Console.WriteLine("【场景四：技术方案评审】");
+        var techText = "CI构建耗时从14:30持续到15:45，" +
+                      "TF-IDF阈值设为0.02，" +
+                      "测试覆盖率要求达到99.9%，" +
+                      "部署脚本在https://github.com/team/repo/blob/main/deploy.sh，" +
+                      "当前运行的是v3.2.1-beta2，" +
+                      "计划春节后上线";
+        ExtractAndShow(recognizer, techText);
+
+        // ========== 5. 家庭群聊场景 ==========
+        Console.WriteLine("【场景五：家庭群通知】");
+        var familyText = "妈，今年春节是2025年1月29日，" +
+                        "我腊月二十八晚上9点的火车，" +
+                        "大概十九点到北京西站，" +
+                        "记得熬腊八粥，" +
+                        "高铁票在12306.cn买的";
+        ExtractAndShow(recognizer, familyText);
+
+        // ========== 6. 新闻资讯场景 ==========
+        Console.WriteLine("【场景六：新闻摘要】");
+        var newsText = "新中国成立75周年庆典将于10月1日上午10点举行，" +
+                      "届时北京时间同步直播，" +
+                      "活动持续约2个小时，" +
+                      "详情见www.cctv.com/2024/guoqing";
+        ExtractAndShow(recognizer, newsText);
+
+        // ========== 7. 跨场景复杂混合 ==========
+        Console.WriteLine("【场景七：混合复杂文本】");
+        var mixedText = "李经理，方案v1.3.0-preview1已发你钉钉，" +
+                       "评审会改到下周三下午3点，" +
+                       "比之前定的2025-05-20提前了，" +
+                       "工期压缩到5个工作日，" +
+                       "参考文档在https://confluence.company.com/display/TEAM/Spec，" +
+                       "金龙鱼1:1:1调和油是本次采购的样品之一，" +
+                       "占比30%，" +
+                       "到货时间是明天下午4:30，" +
+                       "有问题微信我，我随时在线👍";
+        ExtractAndShow(recognizer, mixedText);
+
+        // ========== 8. 实体脱敏演示 ==========
+        Console.WriteLine("=== 实体脱敏演示 ===\n");
+        var sensitive = "张先生的身份证号是11010119900101xxxx，" +
+                       "预约了明天上午9点的专家号，" +
+                       "费用结算在www.hospital.com/pay，" +
+                       "药品版本是v2.0-batch3";
+        Console.WriteLine($"原文: {sensitive}");
+        var entities = recognizer.Recognize(sensitive);
+        var masked = MaskEntities(sensitive, entities);
+        Console.WriteLine($"脱敏: {masked}\n");
+
+        // ========== 9. 按类型筛选演示 ==========
+        Console.WriteLine("=== 按类型筛选：仅提取时间实体 ===\n");
+        var filterText = "项目截止2025-06-30，每周三下午2:30开会，" +
+                        "使用v3.2.1版本，参考https://docs.example.com，" +
+                        "北京时间九点整发布";
+        var all = recognizer.Recognize(filterText);
+        var timeOnly = all.Where(e =>
+            e.Type is "datetime" or "time" or "relativedate" or
+                      "timerange" or "deadline" or "timezone" or "weekday"
+        ).OrderBy(e => e.Start);
+
+        Console.WriteLine($"文本: {filterText}");
+        foreach (var e in timeOnly)
+        {
+            Console.WriteLine($"  [{e.Start}-{e.End}] {e.Type,-12} => {e.Text}");
+        }
+    }
+
+    static void ExtractAndShow(ITimeRecognizer recognizer, string text)
+    {
+        Console.WriteLine($"文本: {text}");
+        var entities = recognizer.Recognize(text);
+
+        if (entities.Count == 0)
+        {
+            Console.WriteLine("  → 未识别到实体");
+        }
+        else
+        {
+            foreach (var e in entities.OrderBy(x => x.Start))
+            {
+                Console.WriteLine($"  [{e.Start,3}-{e.End,3}] {e.Type,-12} => {e.Text}");
+            }
+        }
+        Console.WriteLine();
+    }
+
+    static string MaskEntities(string text, List<TimeEntity> entities)
+    {
+        var sb = new System.Text.StringBuilder(text);
+        // 倒序替换避免索引偏移
+        foreach (var e in entities.OrderByDescending(x => x.Start))
+        {
+            sb.Remove(e.Start, e.End - e.Start);
+            sb.Insert(e.Start, $"[{e.Type.ToUpper()}]");
+        }
+        return sb.ToString();
+    }
+}
+```
+
+运行效果可以参考CI测试
