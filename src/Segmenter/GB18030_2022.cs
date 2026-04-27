@@ -52,29 +52,6 @@ namespace JiebaNet.Segmenter
         private const char CJK_EXT_A_END = '\u4DBF';
 
         /// <summary>
-        /// 判断字符是否为中文字符（支持GB18030-2022全部CJK范围）
-        /// </summary>
-        /// <param name="c">要判断的字符</param>
-        /// <returns>如果是中文字符返回true，否则返回false</returns>
-        /// <remarks>
-        /// 注意：对于扩展B-I区的字符，单个char无法表示，
-        /// 需要使用代理对。此方法仅检查BMP内的字符（基本区和扩展A区）。
-        /// 对于代理对字符，请使用IsChineseCharacter(string, int)方法。
-        /// </remarks>
-        public static bool IsChineseCharacter(char c)
-        {
-            // 基本区：0x4E00-0x9FFF
-            if (c >= CJK_BASIC_START && c <= CJK_BASIC_END)
-                return true;
-
-            // 扩展A区：0x3400-0x4DBF
-            if (c >= CJK_EXT_A_START && c <= CJK_EXT_A_END)
-                return true;
-
-            return false;
-        }
-
-        /// <summary>
         /// 判断字符串中指定位置是否为中文字符（支持GB18030-2022全部CJK范围）
         /// </summary>
         /// <param name="text">包含字符的字符串</param>
@@ -102,6 +79,68 @@ namespace JiebaNet.Segmenter
             if (char.IsHighSurrogate(c) && index + 1 < text.Length)
             {
                 char lowSurrogate = text[index + 1];
+                if (char.IsLowSurrogate(lowSurrogate))
+                {
+                    int codePoint = char.ConvertToUtf32(c, lowSurrogate);
+                    // 扩展B区：0x20000-0x2A6DF
+                    if (codePoint >= 0x20000 && codePoint <= 0x2A6DF)
+                        return true;
+                    // 扩展C区：0x2A700-0x2B73F
+                    if (codePoint >= 0x2A700 && codePoint <= 0x2B73F)
+                        return true;
+                    // 扩展D区：0x2B740-0x2B81F
+                    if (codePoint >= 0x2B740 && codePoint <= 0x2B81F)
+                        return true;
+                    // 扩展E区：0x2B820-0x2CEAF
+                    if (codePoint >= 0x2B820 && codePoint <= 0x2CEAF)
+                        return true;
+                    // 扩展F区：0x2CEB0-0x2EBEF
+                    if (codePoint >= 0x2CEB0 && codePoint <= 0x2EBEF)
+                        return true;
+                    // 扩展I区：0x2EBF0-0x2EE5D（公安人名生僻字为主）
+                    if (codePoint >= 0x2EBF0 && codePoint <= 0x2EE5D)
+                        return true;
+                    // 扩展G区：0x30000-0x3134A
+                    if (codePoint >= 0x30000 && codePoint <= 0x3134A)
+                        return true;
+                    // 扩展H区：0x31350-0x323AF
+                    if (codePoint >= 0x31350 && codePoint <= 0x323AF)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 判断ReadOnlySpan中指定位置是否为中文字符（支持GB18030-2022全部CJK范围）
+        /// </summary>
+        /// <param name="span">包含字符的Span</param>
+        /// <param name="index">字符位置索引</param>
+        /// <returns>如果是中文字符返回true，否则返回false</returns>
+        /// <remarks>
+        /// 此方法支持代理对，可以正确识别扩展B-I区的字符。
+        /// 用于高性能Span场景，避免字符串分配。
+        /// </remarks>
+        public static bool IsChineseCharacter(ReadOnlySpan<char> span, int index)
+        {
+            if (span.IsEmpty || index < 0 || index >= span.Length)
+                return false;
+
+            char c = span[index];
+
+            // 基本区：0x4E00-0x9FFF
+            if (c >= CJK_BASIC_START && c <= CJK_BASIC_END)
+                return true;
+
+            // 扩展A区：0x3400-0x4DBF
+            if (c >= CJK_EXT_A_START && c <= CJK_EXT_A_END)
+                return true;
+
+            // 检查代理对（扩展B-I区）
+            if (char.IsHighSurrogate(c) && index + 1 < span.Length)
+            {
+                char lowSurrogate = span[index + 1];
                 if (char.IsLowSurrogate(lowSurrogate))
                 {
                     int codePoint = char.ConvertToUtf32(c, lowSurrogate);
@@ -208,15 +247,6 @@ namespace JiebaNet.Segmenter
         }
 
         /// <summary>
-        /// 获取中文字符正则表达式模式字符串（仅BMP范围，用于char级别匹配）
-        /// </summary>
-        /// <remarks>
-        /// 包含基本区和扩展A区，适用于单字符匹配场景。
-        /// 格式：[\u3400-\u4DBF\u4E00-\u9FFF]
-        /// </remarks>
-        public static string ChineseCharPattern => @"[\u3400-\u4DBF\u4E00-\u9FFF]";
-
-        /// <summary>
         /// 获取中文字符正则表达式模式字符串（完整范围，用于字符串匹配）
         /// </summary>
         /// <remarks>
@@ -247,51 +277,22 @@ namespace JiebaNet.Segmenter
             @"(?:[\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF])";
 
         /// <summary>
-        /// 获取中文字符正则表达式（仅BMP范围，已编译）
+        /// 中文相关字符类（用于正则表达式 [^...] 排除场景）
         /// </summary>
-        public static Regex ChineseCharRegex { get; } = new(ChineseCharPattern, RegexOptions.Compiled);
+        /// <remarks>
+        /// 包含：空白符 + 中文代理对高位 + BMP中文区 + 中文标点。
+        /// 用于 URL、英文分词等"遇到中文就停止"的场景。
+        /// 与 ChineseQuantifierPattern 范围一致，但格式适用于 [^...] 字符类。
+        /// 代理对高位使用 \uD87F 而非 \uD87B，确保排除范围覆盖完整代理对区域。
+        /// BMP中文区范围：\u3400-\u4DBF（扩展A区）\u4E00-\u9FFF（基本区）
+        /// </remarks>
+        public static string ChineseStopClass =>
+            @"\s\uD840-\uD87F\uD880-\uD888\u3400-\u4DBF\u4E00-\u9FFF，。、；：！？""''）】》";
 
         /// <summary>
         /// 获取中文字符正则表达式（完整范围，已编译）
         /// </summary>
         public static Regex ChineseFullRegex { get; } = new(ChineseFullPattern, RegexOptions.Compiled);
-
-        /// <summary>
-        /// 获取中文字符序列正则表达式模式字符串（仅BMP范围）
-        /// </summary>
-        /// <remarks>
-        /// 匹配一个或多个连续的中文字符（基本区和扩展A区）。
-        /// 格式：[\u3400-\u4DBF\u4E00-\u9FFF]+
-        /// </remarks>
-        public static string ChineseSequencePattern => @"[\u3400-\u4DBF\u4E00-\u9FFF]+";
-
-        /// <summary>
-        /// 获取中文字符序列正则表达式（仅BMP范围，已编译）
-        /// </summary>
-        public static Regex ChineseSequenceRegex { get; } = new(ChineseSequencePattern, RegexOptions.Compiled);
-
-        /// <summary>
-        /// 获取非中文字符正则表达式模式字符串（仅BMP范围）
-        /// </summary>
-        /// <remarks>
-        /// 匹配不在基本区和扩展A区的字符。
-        /// </remarks>
-        public static string NonChineseCharPattern => @"[^\u3400-\u4DBF\u4E00-\u9FFF]";
-
-        /// <summary>
-        /// 获取非中文字符正则表达式（仅BMP范围，已编译）
-        /// </summary>
-        public static Regex NonChineseCharRegex { get; } = new(NonChineseCharPattern, RegexOptions.Compiled);
-
-        /// <summary>
-        /// 获取用于正则表达式字符类中的中文范围字符串
-        /// </summary>
-        /// <remarks>
-        /// 用于构建自定义正则表达式时嵌入中文范围。
-        /// 格式：\u3400-\u4DBF\u4E00-\u9FFF
-        /// 注意：仅包含BMP范围（基本区和扩展A区），不包含代理对。
-        /// </remarks>
-        public static string ChineseRangeForCharClass => @"\u3400-\u4DBF\u4E00-\u9FFF";
 
         /// <summary>
         /// 获取包含代理对的中文正则表达式模式（用于分割文本）

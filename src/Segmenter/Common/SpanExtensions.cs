@@ -8,6 +8,7 @@ namespace JiebaNet.Segmenter.Common
     /// <summary>
     /// 基于Span的高性能字符串处理扩展方法
     /// 减少字符串分配，提升分词性能
+    /// 此方法只处理英文，处理中文请使用GB18030_2022.cs
     /// </summary>
     public static class SpanExtensions
     {
@@ -52,13 +53,7 @@ namespace JiebaNet.Segmenter.Common
             return span.Equals(value.AsSpan(), StringComparison.OrdinalIgnoreCase);
         }
 
-        /// <summary>
-        /// 检查字符是否为中文字符（支持GB18030-2022：基本区和扩展A区）
-        /// </summary>
-        public static bool IsChineseCharacter(this char c)
-        {
-            return GB18030_2022.IsChineseCharacter(c);
-        }
+
 
         /// <summary>
         /// 检查字符是否为ASCII字母或数字

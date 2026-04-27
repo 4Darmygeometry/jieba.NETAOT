@@ -352,8 +352,9 @@ namespace JiebaNet.Segmenter
         // 注意：中文范围使用GB18030-2022标准（基本区至扩展I区）
         // 注意：路径部分排除空格、BMP中文和CJK代理对高位（扩展B-I区）
         // 注意：路径部分排除中文标点（如逗号、句号、顿号等），避免域名末尾误包含标点
+        // 注意：使用GB18030_2022.ChineseStopClass统一管理排除字符类
         private static readonly Regex DomainRegex = new(
-            @"(?<![a-zA-Z0-9])(?:https?://)?(?:[a-zA-Z0-9](?:[-a-zA-Z0-9]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(?:/[^\s\uD840-\uD87F\uD880-\uD888" + GB18030_2022.ChineseRangeForCharClass + @"，。、；：！？""''）】》]*)?(?![a-zA-Z0-9])",
+            @"(?<![a-zA-Z0-9])(?:https?://)?(?:[a-zA-Z0-9](?:[-a-zA-Z0-9]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(?:/[^" + GB18030_2022.ChineseStopClass + @"]*)?(?![a-zA-Z0-9])",
             RegexOptions.Compiled);
 
         // ========== 21. 连字符/下划线连接的单词 ==========
