@@ -62,7 +62,7 @@ namespace JiebaNet.Segmenter
         internal static WordDictionary GetOrCreate(JiebaConfig config)
         {
             var effectiveConfig = config.ApplyAutoFallback(ConfigManager.ConfigFileBaseDir);
-            var cacheKey = $"{effectiveConfig.Mode}_{effectiveConfig.Emoji}";
+            var cacheKey = $"{effectiveConfig.Mode}_{effectiveConfig.EntityProtect}";
 
             return _cache.GetOrAdd(cacheKey, _ => new Lazy<WordDictionary>(() =>
             {
@@ -71,7 +71,7 @@ namespace JiebaNet.Segmenter
 
                 Debug.WriteLine("{0} words (and their prefixes)", dict.Trie.Count);
                 Debug.WriteLine("total freq: {0}", dict.Total);
-                Debug.WriteLine("加载模式: {0}, 表情包: {1}", effectiveConfig.Mode, effectiveConfig.Emoji);
+                Debug.WriteLine("加载模式: {0}, 实体保护: {1}", effectiveConfig.Mode, effectiveConfig.EntityProtect);
                 return dict;
             })).Value;
         }
@@ -90,7 +90,7 @@ namespace JiebaNet.Segmenter
 
             Debug.WriteLine("[独立词典] {0} words (and their prefixes)", dict.Trie.Count);
             Debug.WriteLine("[独立词典] total freq: {0}", dict.Total);
-            Debug.WriteLine("[独立词典] 加载模式: {0}, 表情包: {1}", effectiveConfig.Mode, effectiveConfig.Emoji);
+            Debug.WriteLine("[独立词典] 加载模式: {0}, 实体保护: {1}", effectiveConfig.Mode, effectiveConfig.EntityProtect);
             return dict;
         }
 
@@ -132,7 +132,7 @@ namespace JiebaNet.Segmenter
         public static async Task<WordDictionary> CreateAsync(JiebaConfig config)
         {
             var effectiveConfig = config.ApplyAutoFallback(ConfigManager.ConfigFileBaseDir);
-            var cacheKey = $"{effectiveConfig.Mode}_{effectiveConfig.Emoji}";
+            var cacheKey = $"{effectiveConfig.Mode}_{effectiveConfig.EntityProtect}";
 
             if (_cache.TryGetValue(cacheKey, out var cached))
             {
@@ -144,7 +144,7 @@ namespace JiebaNet.Segmenter
 
             Debug.WriteLine("{0} words (and their prefixes)", dict.Trie.Count);
             Debug.WriteLine("total freq: {0}", dict.Total);
-            Debug.WriteLine("加载模式: {0}, 表情包: {1}", effectiveConfig.Mode, effectiveConfig.Emoji);
+            Debug.WriteLine("加载模式: {0}, 实体保护: {1}", effectiveConfig.Mode, effectiveConfig.EntityProtect);
 
             _cache.TryAdd(cacheKey, new Lazy<WordDictionary>(() => dict));
             return dict;

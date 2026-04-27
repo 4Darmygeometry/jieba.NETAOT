@@ -34,6 +34,12 @@ namespace JiebaNet.Segmenter
         /// </summary>
         internal WordDictionary CurrentWordDict { get; }
 
+        /// <summary>
+        /// 是否启用实体保护（日期、时间、版本号、域名等在分词时作为整体）
+        /// 默认为true；使用JiebaConfig(EntityProtect.Disabled)时为false
+        /// </summary>
+        private readonly bool _shouldProtectEntities = true;
+
         internal IDictionary<string, string> UserWordTagTab { get; set; }
 
         #region Regular Expressions
@@ -79,6 +85,7 @@ namespace JiebaNet.Segmenter
         {
             UserWordTagTab = new Dictionary<string, string>();
             CurrentWordDict = WordDictionary.GetOrCreate(config);
+            _shouldProtectEntities = config.ShouldProtectEntities;
         }
 
         /// <summary>
@@ -146,6 +153,15 @@ namespace JiebaNet.Segmenter
             if (string.IsNullOrEmpty(text))
             {
                 return Enumerable.Empty<string>();
+            }
+
+            // 实体保护禁用时，直接使用普通分词（适用于OpenCC繁简转换等场景）
+            if (!_shouldProtectEntities)
+            {
+                var reHan = RegexChineseDefault;
+                var reSkip = RegexSkipDefault;
+                var cutMethod = hmm ? CutDag : (Func<string, IEnumerable<string>>)CutDagWithoutHmm;
+                return CutIt(text, cutMethod, reHan, reSkip, false);
             }
 
             // 识别日期时间实体

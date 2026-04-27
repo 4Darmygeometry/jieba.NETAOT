@@ -25,25 +25,28 @@ namespace JiebaNet.Segmenter
     }
 
     /// <summary>
-    /// 表情包处理模式
+    /// 实体保护模式
+    /// 控制日期、时间、版本号、域名等实体是否在分词时作为整体保护
     /// </summary>
-    public enum EmojiMode
+    public enum EntityProtect
     {
         /// <summary>
-        /// 启用表情包处理（默认）
+        /// 启用实体保护（默认）：日期、时间、版本号、域名等实体在精确模式与搜索引擎模式整体分出
         /// </summary>
         Enabled,
 
         /// <summary>
-        /// 禁用表情包处理（--no-emoji模式）
+        /// 禁用实体保护：不保护日期、时间、版本号、域名等实体，默认拆分
+        /// 适用于OpenCC繁简转换等场景，避免实体保护影响转换
         /// </summary>
         Disabled
     }
 
     /// <summary>
     /// jieba.NET分词器配置类
-    /// 控制词典加载模式、表情包处理等行为
+    /// 控制词典加载模式、实体保护等行为
     /// 支持自动检测词库缺失并降级处理
+    /// Emoji处理改为自动检测emoji.txt是否存在：存在时进行emoji识别，不存在时不进行
     /// </summary>
     public class JiebaConfig
     {
@@ -53,9 +56,11 @@ namespace JiebaNet.Segmenter
         public JiebaMode Mode { get; set; } = JiebaMode.All;
 
         /// <summary>
-        /// 表情包处理模式（默认启用）
+        /// 实体保护模式（默认启用）
+        /// 启用时：日期、时间、版本号、域名等实体在精确模式与搜索引擎模式整体分出
+        /// 禁用时：不保护实体，默认拆分，适用于OpenCC繁简转换等场景
         /// </summary>
-        public EmojiMode Emoji { get; set; } = EmojiMode.Enabled;
+        public EntityProtect EntityProtect { get; set; } = EntityProtect.Enabled;
 
         /// <summary>
         /// 是否启用自动降级（当词库缺失时自动切换模式）
@@ -64,63 +69,63 @@ namespace JiebaNet.Segmenter
         public bool AutoFallback { get; set; } = true;
 
         /// <summary>
-        /// 默认构造函数：全量加载+启用表情包
+        /// 默认构造函数：全量加载+启用实体保护
         /// </summary>
         public JiebaConfig() { }
 
         /// <summary>
-        /// 指定分词模式构造函数（默认启用表情包）
+        /// 指定分词模式构造函数（默认启用实体保护）
         /// </summary>
         /// <param name="mode">分词模式</param>
         public JiebaConfig(JiebaMode mode)
         {
             Mode = mode;
-            Emoji = EmojiMode.Enabled;
+            EntityProtect = EntityProtect.Enabled;
+        }
+
+        /// <summary>
+        /// 指定实体保护模式构造函数
+        /// </summary>
+        /// <param name="entityProtect">实体保护模式</param>
+        public JiebaConfig(EntityProtect entityProtect)
+        {
+            Mode = JiebaMode.All;
+            EntityProtect = entityProtect;
         }
 
         /// <summary>
         /// 完整配置构造函数
         /// </summary>
         /// <param name="mode">分词模式</param>
-        /// <param name="emoji">表情包处理模式</param>
-        public JiebaConfig(JiebaMode mode, EmojiMode emoji)
+        /// <param name="entityProtect">实体保护模式</param>
+        public JiebaConfig(JiebaMode mode, EntityProtect entityProtect)
         {
             Mode = mode;
-            Emoji = emoji;
+            EntityProtect = entityProtect;
         }
 
         /// <summary>
-        /// 创建简体中文+表情包配置
+        /// 创建简体中文配置（启用实体保护）
         /// </summary>
-        public static JiebaConfig CreateZhHans() => new(JiebaMode.ZhHans, EmojiMode.Enabled);
+        public static JiebaConfig CreateZhHans() => new(JiebaMode.ZhHans, EntityProtect.Enabled);
 
         /// <summary>
-        /// 创建繁体中文+表情包配置
+        /// 创建繁体中文配置（启用实体保护）
         /// </summary>
-        public static JiebaConfig CreateZhHant() => new(JiebaMode.ZhHant, EmojiMode.Enabled);
-
-        /// <summary>
-        /// 创建简体中文+无表情包配置（--no-emoji模式）
-        /// </summary>
-        public static JiebaConfig CreateZhHansNoEmoji() => new(JiebaMode.ZhHans, EmojiMode.Disabled);
-
-        /// <summary>
-        /// 创建繁体中文+无表情包配置（--no-emoji模式）
-        /// </summary>
-        public static JiebaConfig CreateZhHantNoEmoji() => new(JiebaMode.ZhHant, EmojiMode.Disabled);
+        public static JiebaConfig CreateZhHant() => new(JiebaMode.ZhHant, EntityProtect.Enabled);
 
         /// <summary>
         /// 创建全量加载配置（默认行为，兼容旧版本）
         /// </summary>
-        public static JiebaConfig CreateAll() => new(JiebaMode.All, EmojiMode.Enabled);
+        public static JiebaConfig CreateAll() => new(JiebaMode.All, EntityProtect.Enabled);
 
         /// <summary>
         /// 根据词库文件存在情况执行自动降级逻辑
         /// 降级规则：
-        /// - emoji.txt丢失 → 自动变--no-emoji模式
         /// - dict-hant丢失且当前是zh_hant → 自动进zh_hans模式
         /// - dict.txt丢失且当前是zh_hans → 自动进zh_hant模式
         /// - 都丢失 → 抛出异常
+        /// Emoji处理已改为自动检测emoji.txt是否存在，无需手动降级
         /// </summary>
         /// <param name="configFileBaseDir">词库基础目录</param>
         /// <returns>经过降级处理后的配置</returns>
@@ -132,19 +137,11 @@ namespace JiebaNet.Segmenter
 
             var mainDictPath = Path.Combine(configFileBaseDir, "dict.txt");
             var hantDictPath = Path.Combine(configFileBaseDir, "dict-hant.txt");
-            var emojiDictPath = Path.Combine(configFileBaseDir, "emoji.txt");
 
             var hasMainDict = File.Exists(mainDictPath);
             var hasHantDict = File.Exists(hantDictPath);
-            var hasEmojiDict = File.Exists(emojiDictPath);
 
             var newMode = Mode;
-            var newEmoji = Emoji;
-
-            if (!hasEmojiDict && newEmoji == EmojiMode.Enabled)
-            {
-                newEmoji = EmojiMode.Disabled;
-            }
 
             if (!hasMainDict && !hasHantDict)
             {
@@ -172,9 +169,9 @@ namespace JiebaNet.Segmenter
                 newMode = JiebaMode.ZhHans;
             }
 
-            if (newMode != Mode || newEmoji != Emoji)
+            if (newMode != Mode)
             {
-                return new JiebaConfig(newMode, newEmoji) { AutoFallback = false };
+                return new JiebaConfig(newMode, EntityProtect) { AutoFallback = false };
             }
 
             return this;
@@ -192,7 +189,20 @@ namespace JiebaNet.Segmenter
 
         /// <summary>
         /// 判断是否需要加载emoji词库
+        /// 自动检测emoji.txt是否存在：存在时加载，不存在时不加载
         /// </summary>
-        internal bool ShouldLoadEmoji => Emoji == EmojiMode.Enabled;
+        internal bool ShouldLoadEmoji
+        {
+            get
+            {
+                var emojiDictPath = Path.Combine(ConfigManager.ConfigFileBaseDir, "emoji.txt");
+                return File.Exists(emojiDictPath);
+            }
+        }
+
+        /// <summary>
+        /// 判断是否启用实体保护
+        /// </summary>
+        internal bool ShouldProtectEntities => EntityProtect == EntityProtect.Enabled;
     }
 }

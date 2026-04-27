@@ -232,6 +232,21 @@ namespace JiebaNet.Segmenter
             @"[\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF]";
 
         /// <summary>
+        /// 获取用于量词匹配的中文模式（含代理对，已包裹非捕获组）
+        /// </summary>
+        /// <remarks>
+        /// 用于嵌入其他正则表达式中，作为可重复的中文匹配单元。
+        /// 后面直接跟 *? + {n,m} 就能匹配任意长度的中文文本（含生僻字），无需调用方自己处理代理对。
+        /// 格式：(?:[\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF])
+        /// 典型用法示例：
+        /// - 版本号后缀：ChineseQuantifierPattern + "*?版(?:本?)" → 匹配"0.02测试版本"
+        /// - 中文人名：ChineseQuantifierPattern + "{2,4}" → 匹配2-4个字的人名
+        /// - 中文数量词："\d+" + ChineseQuantifierPattern + "+" → 匹配"3个工作日"
+        /// </remarks>
+        public static string ChineseQuantifierPattern =>
+            @"(?:[\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF])";
+
+        /// <summary>
         /// 获取中文字符正则表达式（仅BMP范围，已编译）
         /// </summary>
         public static Regex ChineseCharRegex { get; } = new(ChineseCharPattern, RegexOptions.Compiled);
