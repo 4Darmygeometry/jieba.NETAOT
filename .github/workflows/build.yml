@@ -61,6 +61,12 @@ jobs:
       - name: Run .NET Framework 4.8 test
         run: test/NetFrameworkTest/bin/Release/net48/JiebaNet.NetFrameworkTest.exe
 
+      - name: Build TimeRecognizerDemo
+        run: dotnet build test/TimeRecognizerDemo/TimeRecognizerDemo/TimeRecognizerDemo.csproj -c Release
+
+      - name: Run TimeRecognizerDemo test
+        run: test/TimeRecognizerDemo/TimeRecognizerDemo/bin/Release/net10.0/win-x64/TimeRecognizerDemo.exe
+
       - name: Pack jieba.NETAOT
         if: startsWith(github.ref, 'refs/tags/v')
         run: dotnet pack src/jieba.NETAOT/jieba.NETAOT.csproj -c Release -p:Version=${{ steps.get_version.outputs.VERSION }} --output ./artifacts
