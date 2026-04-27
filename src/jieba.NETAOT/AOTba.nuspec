@@ -7,7 +7,7 @@
     <authors>andersc;4Darmygeometry</authors>
     <owners>4Darmygeometry</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <license type="expression">MIT</license>
+    <license type="expression">MIT OR Apache-2.0</license>
     <projectUrl>https://github.com/4Darmygeometry/jieba.NETAOT/</projectUrl>
     <readme>README.md</readme>
     <description>AOTba是jieba中文分词的.NET版本（C#实现），支持AOT编译。
