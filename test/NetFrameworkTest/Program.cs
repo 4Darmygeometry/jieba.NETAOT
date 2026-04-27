@@ -571,7 +571,7 @@ namespace JiebaNet.NetFrameworkTest
                 var joined15 = string.Join("╱", result15);
                 Console.WriteLine($"  测试15: {text15}");
                 Console.WriteLine($"  结果: {joined15}");
-                if (!result15.Contains("发布候选版本4.1.2-rc1") && !result15.Contains("候选版本4.1.2-rc1") && !result15.Contains("4.1.2-rc1"))
+                if (!result15.Contains("候选版本4.1.2-rc1") && !result15.Contains("4.1.2-rc1"))
                 {
                     Console.WriteLine("  失败 ✗ 版本号'候选版本4.1.2-rc1'未被正确识别");
                     return false;
