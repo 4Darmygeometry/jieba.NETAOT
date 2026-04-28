@@ -10,7 +10,7 @@ namespace JiebaNet.Segmenter
     /// 提供统一的中文字符判断接口，支持到扩展I区
     /// </summary>
     /// <remarks>
-    /// GB18030-2022 第1号修改单强制要求中文处理支持以下CJK统一汉字区：
+    /// GB18030-2022 第1号修改单强制要求中文处理支持以下CJK统一汉字区及视作汉字的区块：
     /// - 基本区（含补区）：0x4E00-0x9FFF
     /// - 扩展A区（含补区）：0x3400-0x4DBF
     /// - 扩展B区（含补区）：0x20000-0x2A6DF
@@ -21,6 +21,11 @@ namespace JiebaNet.Segmenter
     /// - 扩展G区：0x30000-0x3134A
     /// - 扩展H区：0x31350-0x323AF
     /// - 扩展I区：0x2EBF0-0x2EE5D（公安人名生僻字为主）
+    /// - 汉字笔画（CJK Strokes）：0x31C0-0x31E5，38字
+    /// - 汉字结构描述字符（Ideographic Description Characters）：0x2FF0-0x2FFF，16字
+    /// - 汉语注音符号（Bopomofo）：0x3105-0x312F，43字
+    /// - 注音扩展（Bopomofo Extended）：0x31A0-0x31BF，32字
+    /// - 〇（IDEOGRAPHIC NUMBER ZERO）：0x3007，1字
     /// </remarks>
     public static class GB18030_2022
     {
@@ -52,6 +57,28 @@ namespace JiebaNet.Segmenter
         private const char CJK_EXT_A_END = '\u4DBF';
 
         /// <summary>
+        /// GB18030-2022 及第1号修改单要求的补充汉字相关区块
+        /// 这些区块虽然在 Unicode 中不属于 CJK 统一汉字区，但在 GB18030 中作为汉字处理
+        /// </summary>
+        /// <remarks>
+        /// 包含以下区块：
+        /// - 汉字笔画（CJK Strokes）：0x31C0-0x31E5，38字
+        /// - 汉字结构描述字符（Ideographic Description Characters）：0x2FF0-0x2FFF，16字
+        /// - 汉语注音符号（Bopomofo）：0x3105-0x312F，43字
+        /// - 注音扩展（Bopomofo Extended）：0x31A0-0x31BF，32字
+        /// - 〇（IDEOGRAPHIC NUMBER ZERO）：0x3007，1字
+        /// </remarks>
+        private const char CJK_STROKES_START = '\u31C0';
+        private const char CJK_STROKES_END = '\u31E5';
+        private const char IDC_START = '\u2FF0';
+        private const char IDC_END = '\u2FFF';
+        private const char BOPOMOFO_START = '\u3105';
+        private const char BOPOMOFO_END = '\u312F';
+        private const char BOPOMOFO_EXT_START = '\u31A0';
+        private const char BOPOMOFO_EXT_END = '\u31BF';
+        private const char IDEOGRAPHIC_ZERO = '\u3007';
+
+        /// <summary>
         /// 判断字符串中指定位置是否为中文字符（支持GB18030-2022全部CJK范围）
         /// </summary>
         /// <param name="text">包含字符的字符串</param>
@@ -73,6 +100,27 @@ namespace JiebaNet.Segmenter
 
             // 扩展A区：0x3400-0x4DBF
             if (c >= CJK_EXT_A_START && c <= CJK_EXT_A_END)
+                return true;
+
+            // GB18030-2022 补充区块（汉字相关）
+            // 〇（IDEOGRAPHIC NUMBER ZERO）：0x3007
+            if (c == IDEOGRAPHIC_ZERO)
+                return true;
+
+            // 汉字结构描述字符：0x2FF0-0x2FFF
+            if (c >= IDC_START && c <= IDC_END)
+                return true;
+
+            // 汉语注音符号：0x3105-0x312F
+            if (c >= BOPOMOFO_START && c <= BOPOMOFO_END)
+                return true;
+
+            // 注音扩展：0x31A0-0x31BF
+            if (c >= BOPOMOFO_EXT_START && c <= BOPOMOFO_EXT_END)
+                return true;
+
+            // 汉字笔画：0x31C0-0x31E5
+            if (c >= CJK_STROKES_START && c <= CJK_STROKES_END)
                 return true;
 
             // 检查代理对（扩展B-I区）
@@ -137,6 +185,27 @@ namespace JiebaNet.Segmenter
             if (c >= CJK_EXT_A_START && c <= CJK_EXT_A_END)
                 return true;
 
+            // GB18030-2022 补充区块（汉字相关）
+            // 〇（IDEOGRAPHIC NUMBER ZERO）：0x3007
+            if (c == IDEOGRAPHIC_ZERO)
+                return true;
+
+            // 汉字结构描述字符：0x2FF0-0x2FFF
+            if (c >= IDC_START && c <= IDC_END)
+                return true;
+
+            // 汉语注音符号：0x3105-0x312F
+            if (c >= BOPOMOFO_START && c <= BOPOMOFO_END)
+                return true;
+
+            // 注音扩展：0x31A0-0x31BF
+            if (c >= BOPOMOFO_EXT_START && c <= BOPOMOFO_EXT_END)
+                return true;
+
+            // 汉字笔画：0x31C0-0x31E5
+            if (c >= CJK_STROKES_START && c <= CJK_STROKES_END)
+                return true;
+
             // 检查代理对（扩展B-I区）
             if (char.IsHighSurrogate(c) && index + 1 < span.Length)
             {
@@ -187,6 +256,27 @@ namespace JiebaNet.Segmenter
 
             // 扩展A区：0x3400-0x4DBF
             if (codePoint >= 0x3400 && codePoint <= 0x4DBF)
+                return true;
+
+            // GB18030-2022 补充区块（汉字相关）
+            // 〇（IDEOGRAPHIC NUMBER ZERO）：0x3007
+            if (codePoint == 0x3007)
+                return true;
+
+            // 汉字结构描述字符：0x2FF0-0x2FFF
+            if (codePoint >= 0x2FF0 && codePoint <= 0x2FFF)
+                return true;
+
+            // 汉语注音符号：0x3105-0x312F
+            if (codePoint >= 0x3105 && codePoint <= 0x312F)
+                return true;
+
+            // 注音扩展：0x31A0-0x31BF
+            if (codePoint >= 0x31A0 && codePoint <= 0x31BF)
+                return true;
+
+            // 汉字笔画：0x31C0-0x31E5
+            if (codePoint >= 0x31C0 && codePoint <= 0x31E5)
                 return true;
 
             // 扩展B区：0x20000-0x2A6DF
@@ -250,16 +340,22 @@ namespace JiebaNet.Segmenter
         /// 获取中文字符正则表达式模式字符串（完整范围，用于字符串匹配）
         /// </summary>
         /// <remarks>
-        /// 包含基本区和扩展A-I区，适用于字符串匹配场景。
+        /// 包含基本区和扩展A-I区，以及GB18030-2022补充区块，适用于字符串匹配场景。
         /// 注意：扩展B-I区使用代理对表示。
         /// 代理对范围说明：
         /// - 扩展B-F区：\uD840-\uD87F 高位代理
         /// - 扩展I区：\uD87A-\uD87B 高位代理（0x2EBF0-0x2EE5D）
         /// - 扩展G-H区：\uD880-\uD888 高位代理（0x30000-0x323AF）
-        /// 格式：[\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF]
+        /// GB18030-2022补充区块：
+        /// - 〇：\u3007
+        /// - 汉字结构：\u2FF0-\u2FFF
+        /// - 汉语注音：\u3105-\u312F
+        /// - 注音扩展：\u31A0-\u31BF
+        /// - 汉字笔画：\u31C0-\u31E5
+        /// 格式：[\u3007\u2FF0-\u2FFF\u3105-\u312F\u31A0-\u31E5\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF]
         /// </remarks>
         public static string ChineseFullPattern =>
-            @"[\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF]";
+            @"[\u3007\u2FF0-\u2FFF\u3105-\u312F\u31A0-\u31E5\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF]";
 
         /// <summary>
         /// 获取用于量词匹配的中文模式（含代理对，已包裹非捕获组）
@@ -267,27 +363,27 @@ namespace JiebaNet.Segmenter
         /// <remarks>
         /// 用于嵌入其他正则表达式中，作为可重复的中文匹配单元。
         /// 后面直接跟 *? + {n,m} 就能匹配任意长度的中文文本（含生僻字），无需调用方自己处理代理对。
-        /// 格式：(?:[\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF])
+        /// 格式：(?:[\u3007\u2FF0-\u2FFF\u3105-\u312F\u31A0-\u31E5\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF])
         /// 典型用法示例：
         /// - 版本号后缀：ChineseQuantifierPattern + "*?版(?:本?)" → 匹配"0.02测试版本"
         /// - 中文人名：ChineseQuantifierPattern + "{2,4}" → 匹配2-4个字的人名
         /// - 中文数量词："\d+" + ChineseQuantifierPattern + "+" → 匹配"3个工作日"
         /// </remarks>
         public static string ChineseQuantifierPattern =>
-            @"(?:[\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF])";
+            @"(?:[\u3007\u2FF0-\u2FFF\u3105-\u312F\u31A0-\u31E5\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF])";
 
         /// <summary>
         /// 中文相关字符类（用于正则表达式 [^...] 排除场景）
         /// </summary>
         /// <remarks>
-        /// 包含：空白符 + 中文代理对高位 + BMP中文区 + 中文标点。
+        /// 包含：空白符 + 中文代理对高位 + BMP中文区 + 中文标点 + GB18030-2022补充区块。
         /// 用于 URL、英文分词等"遇到中文就停止"的场景。
         /// 与 ChineseQuantifierPattern 范围一致，但格式适用于 [^...] 字符类。
         /// 代理对高位使用 \uD87F 而非 \uD87B，确保排除范围覆盖完整代理对区域。
-        /// BMP中文区范围：\u3400-\u4DBF（扩展A区）\u4E00-\u9FFF（基本区）
+        /// BMP中文区范围：\u3007（〇）\u2FF0-\u2FFF（汉字结构）\u3105-\u312F（汉语注音）\u31A0-\u31E5（注音扩展+笔画）\u3400-\u4DBF（扩展A区）\u4E00-\u9FFF（基本区）
         /// </remarks>
         public static string ChineseStopClass =>
-            @"\s\uD840-\uD87F\uD880-\uD888\u3400-\u4DBF\u4E00-\u9FFF，。、；：！？""''）】》";
+            @"\s\uD840-\uD87F\uD880-\uD888\u3007\u2FF0-\u2FFF\u3105-\u312F\u31A0-\u31E5\u3400-\u4DBF\u4E00-\u9FFF，。、；：！？""''）】》";
 
         /// <summary>
         /// 获取中文字符正则表达式（完整范围，已编译）
@@ -300,10 +396,10 @@ namespace JiebaNet.Segmenter
         /// <remarks>
         /// 用于匹配中文块（包括代理对），用于文本分割场景。
         /// 使用非捕获组(?:...)避免Split方法产生额外的捕获组内容。
-        /// 格式：(?:[\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF])+
+        /// 格式：(?:[\u3007\u2FF0-\u2FFF\u3105-\u312F\u31A0-\u31E5\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF])+
         /// </remarks>
         public static string ChineseBlockPattern =>
-            @"(?:[\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF])+";
+            @"(?:[\u3007\u2FF0-\u2FFF\u3105-\u312F\u31A0-\u31E5\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF])+";
 
         /// <summary>
         /// 获取中文块正则表达式（已编译）
@@ -316,10 +412,10 @@ namespace JiebaNet.Segmenter
         /// <remarks>
         /// 用于匹配中文+字母数字混合块（包括代理对），用于精确模式分词。
         /// 使用非捕获组(?:...)避免Split方法产生额外的捕获组内容。
-        /// 格式：(?:[\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF]|a-zA-Z0-9+#&\._%·\-)+
+        /// 格式：(?:[\u3007\u2FF0-\u2FFF\u3105-\u312F\u31A0-\u31E5\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF]|a-zA-Z0-9+#&\._%·\-)+
         /// </remarks>
         public static string ChineseMixedBlockPattern =>
-            @"(?:[\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF]|[a-zA-Z0-9+#&\._%·\-])+";
+            @"(?:[\u3007\u2FF0-\u2FFF\u3105-\u312F\u31A0-\u31E5\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF]|[a-zA-Z0-9+#&\._%·\-])+";
 
         /// <summary>
         /// 获取中文+字母数字混合块正则表达式（已编译）

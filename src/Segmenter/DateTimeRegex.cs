@@ -123,6 +123,30 @@ namespace JiebaNet.Segmenter
             @"(?![\d一二三四五六七八九十〇零])",
             RegexOptions.Compiled);
 
+        // ========== 2.5 纯年份 ==========
+        // 匹配格式：2021年、二零二一年、二〇二一年
+        // 注意：单独的年份表达式，后面不跟月份
+        // 注意：支持阿拉伯数字年份（4位）和中文数字年份（4位，含"零"和"〇"）
+        // 注意：中文数字年份支持"二零二一"、"二〇二一"等格式
+        // 注意：使用负向前瞻排除"年"后面跟月/季度的情况（这些由DateTimeChineseRegex和QuarterRegex处理）
+        private static readonly Regex YearOnlyRegex = new(
+            @"(?:^|(?<![\d一二三四五六七八九十〇零]))" +
+            @"(?<year>\d{4}|[一二三四五六七八九十〇零]{4})年" +
+            @"(?![月季度])",
+            RegexOptions.Compiled);
+
+        // ========== 2.6 年月（不含日） ==========
+        // 匹配格式：2021年5月、二零二一年五月、二〇二一年五月
+        // 注意：年份+月份的组合，后面不跟日
+        // 注意：支持阿拉伯数字和中文数字
+        // 注意：使用负向前瞻排除"月"后面跟日的情况（这些由DateTimeChineseRegex处理）
+        private static readonly Regex YearMonthRegex = new(
+            @"(?:^|(?<![\d一二三四五六七八九十〇零]))" +
+            @"(?:(?<year>\d{4}|[一二三四五六七八九十〇零]{4})年)?" +
+            @"(?<month>\d{1,2}|[一二三四五六七八九十]{1,3})月" +
+            @"(?![日号號\d一二三四五六七八九十])",
+            RegexOptions.Compiled);
+
         // ========== 3. 农历 ==========
         // 注意：农历日期后可跟时间段+时间（如"腊月二十八晚上9点"）
         private static readonly Regex LunarRegex = new(
@@ -370,12 +394,16 @@ namespace JiebaNet.Segmenter
         // 优先级数组（按优先级从高到低排列）
         // 相对时间组合（如"明天下午3点"）优先级高于单独的时间（如"下午3点"）
         // 时间格式优先级高于比值格式，确保"14:30"被识别为时间而非比值
+        // 纯年份优先级低于完整日期，确保"二零二一年五月"被识别为完整日期而非"二零二一年"+"五月"
+        // 年月优先级低于完整日期，高于纯年份
         private static readonly (Regex regex, string type, int priority)[] Patterns = new[]
         {
             (DateTimeIsoRegex, "datetime", 100),
             (RangeRegex, "timerange", 95),
             (DeadlineRegex, "deadline", 90),
             (DateTimeChineseRegex, "datetimex", 87),
+            (YearMonthRegex, "yearmonth", 86),
+            (YearOnlyRegex, "year", 85),
             (LunarRegex, "lunardate", 80),
             (TraditionalRegex, "traditional", 75),
             (DynastyRegex, "dynasty", 70),
@@ -410,19 +438,6 @@ namespace JiebaNet.Segmenter
                 foreach (Match match in regex.Matches(text))
                 {
                     if (match.Length == 0) continue;
-
-                    // 检查是否与已有结果重叠
-                    bool overlaps = false;
-                    foreach (var existing in results)
-                    {
-                        if (match.Index < existing.End && match.Index + match.Length > existing.Start)
-                        {
-                            overlaps = true;
-                            break;
-                        }
-                    }
-                    if (overlaps) continue;
-
                     results.Add(new TimeEntity(match.Value, match.Index, match.Index + match.Length, type));
                 }
             }
@@ -430,14 +445,21 @@ namespace JiebaNet.Segmenter
             // 按位置排序，同一位置按长度降序（优先保留更长的匹配）
             results.Sort((a, b) => a.Start != b.Start ? a.Start.CompareTo(b.Start) : (b.End - b.Start).CompareTo(a.End - a.Start));
             
-            // 去除被包含的子区间
+            // 去除被包含或重叠的子区间（优先保留更长的匹配）
             var filtered = new List<TimeEntity>();
             foreach (var r in results)
             {
                 bool contained = false;
                 foreach (var f in filtered)
                 {
+                    // 如果新结果被已有结果包含，跳过
                     if (r.Start >= f.Start && r.End <= f.End) { contained = true; break; }
+                    // 如果新结果包含已有结果，移除已有结果（保留更长的）
+                    if (r.Start <= f.Start && r.End >= f.End)
+                    {
+                        filtered.Remove(f);
+                        break;
+                    }
                 }
                 if (!contained) filtered.Add(r);
             }
