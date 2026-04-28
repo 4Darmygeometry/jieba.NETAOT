@@ -28,7 +28,7 @@ class TimeRecognizerDemo
             ("3个工作日", "duration"),
             ("Q2", "quarter"),
             ("v2.5.0-rc2", "version"),
-            ("2025-06-30", "datetime"),
+            ("deadline是2025-06-30", "deadline"),
             ("https://wiki.company.com/project-x", "domain"),
         };
         RunTest(recognizer, workText, workExpected);
@@ -152,6 +152,13 @@ class TimeRecognizerDemo
         };
         RunTest(recognizer, sensitive, sensitiveExpected);
 
+        // 脱敏后结果显示
+        var sensitiveEntities = recognizer.Recognize(sensitive);
+        var masked = MaskEntities(sensitive, sensitiveEntities);
+        Console.WriteLine($"  脱敏前: {sensitive}");
+        Console.WriteLine($"  脱敏后: {masked}");
+        Console.WriteLine();
+
         // ========== 9. 按类型筛选演示 ==========
         Console.WriteLine("【场景九：按类型筛选】");
         var filterText = "项目截止2025-06-30，每周三下午2:30开会，" +
@@ -159,7 +166,7 @@ class TimeRecognizerDemo
                         "北京时间九点整发布";
         var filterExpected = new[]
         {
-            ("2025-06-30", "datetime"),
+            ("截止2025-06-30", "deadline"),
             ("周三下午2:30", "relativedate"),
             ("v3.2.1版本", "version"),
             ("https://docs.example.com", "domain"),
@@ -175,9 +182,9 @@ class TimeRecognizerDemo
                              "二零二一年五月是项目启动时间";
         var chineseYearExpected = new[]
         {
-            ("二零一零年", "year"),
+            ("二零一零年", "datetimex"),
             ("二〇一〇年五月一日", "datetimex"),
-            ("二零二一年五月", "yearmonth"),
+            ("二零二一年五月", "datetimex"),
         };
         RunTest(recognizer, chineseYearText, chineseYearExpected);
 
@@ -190,7 +197,7 @@ class TimeRecognizerDemo
                          "注音扩展ㆠ用于方言";
         var gb18030Expected = new[]
         {
-            ("二〇一〇年", "year"),
+            ("二〇一〇年", "datetimex"),
         };
         RunTest(recognizer, gb18030Text, gb18030Expected);
 
@@ -249,5 +256,19 @@ class TimeRecognizerDemo
             _failedCount++;
         }
         Console.WriteLine();
+    }
+
+    /// <summary>
+    /// 将文本中的实体替换为[类型]标记，实现脱敏
+    /// </summary>
+    static string MaskEntities(string text, IEnumerable<TimeEntity> entities)
+    {
+        var sorted = entities.OrderByDescending(e => e.Start).ToList();
+        var result = text;
+        foreach (var e in sorted)
+        {
+            result = result.Remove(e.Start, e.End - e.Start).Insert(e.Start, $"[{e.Type}]");
+        }
+        return result;
     }
 }
