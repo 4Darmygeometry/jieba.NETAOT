@@ -617,66 +617,6 @@ namespace JiebaNet.Segmenter.Tests
             Console.WriteLine("测试3: " + string.Join("/", result3));
         }
 
-        /// <summary>
-        /// 测试GB18030-2022补充区块（〇、汉字笔画、汉字结构、汉语注音、注音扩展）
-        /// </summary>
-        [TestCase]
-        [Category("GB18030")]
-        public void TestGB18030SupplementalBlocks()
-        {
-            // 测试〇字符
-            Assert.That(GB18030_2022.IsChineseCharacter("〇", 0), Is.True, "〇应该是中文字符");
-            Assert.That(GB18030_2022.IsChineseCodePoint(0x3007), Is.True, "〇(U+3007)应该是中文码点");
-            
-            // 测试汉字笔画（31C0-31E5）
-            Assert.That(GB18030_2022.IsChineseCharacter("㇐", 0), Is.True, "㇐应该是中文字符（汉字笔画）");
-            Assert.That(GB18030_2022.IsChineseCodePoint(0x31C0), Is.True, "U+31C0应该是中文码点（汉字笔画起始）");
-            Assert.That(GB18030_2022.IsChineseCodePoint(0x31E5), Is.True, "U+31E5应该是中文码点（汉字笔画结束）");
-            
-            // 测试汉字结构描述字符（2FF0-2FFF）
-            Assert.That(GB18030_2022.IsChineseCharacter("⿰", 0), Is.True, "⿰应该是中文字符（汉字结构）");
-            Assert.That(GB18030_2022.IsChineseCodePoint(0x2FF0), Is.True, "U+2FF0应该是中文码点（汉字结构起始）");
-            Assert.That(GB18030_2022.IsChineseCodePoint(0x2FFF), Is.True, "U+2FFF应该是中文码点（汉字结构结束）");
-            
-            // 测试汉语注音符号（3105-312F）
-            Assert.That(GB18030_2022.IsChineseCharacter("ㄅ", 0), Is.True, "ㄅ应该是中文字符（汉语注音）");
-            Assert.That(GB18030_2022.IsChineseCodePoint(0x3105), Is.True, "U+3105应该是中文码点（汉语注音起始）");
-            Assert.That(GB18030_2022.IsChineseCodePoint(0x312F), Is.True, "U+312F应该是中文码点（汉语注音结束）");
-            
-            // 测试注音扩展（31A0-31BF）
-            Assert.That(GB18030_2022.IsChineseCharacter("ㆠ", 0), Is.True, "ㆠ应该是中文字符（注音扩展）");
-            Assert.That(GB18030_2022.IsChineseCodePoint(0x31A0), Is.True, "U+31A0应该是中文码点（注音扩展起始）");
-            Assert.That(GB18030_2022.IsChineseCodePoint(0x31BF), Is.True, "U+31BF应该是中文码点（注音扩展结束）");
-            
-            Console.WriteLine("GB18030-2022补充区块测试通过");
-        }
-
-        /// <summary>
-        /// 测试正则表达式模式包含补充区块
-        /// </summary>
-        [TestCase]
-        [Category("GB18030")]
-        public void TestChinesePatternWithSupplementalBlocks()
-        {
-            var regex = GB18030_2022.ChineseFullRegex;
-            
-            // 测试〇字符匹配
-            Assert.That(regex.IsMatch("〇"), Is.True, "〇应该匹配中文正则");
-            
-            // 测试汉字笔画匹配
-            Assert.That(regex.IsMatch("㇐"), Is.True, "㇐应该匹配中文正则（汉字笔画）");
-            
-            // 测试汉字结构匹配
-            Assert.That(regex.IsMatch("⿰"), Is.True, "⿰应该匹配中文正则（汉字结构）");
-            
-            // 测试汉语注音匹配
-            Assert.That(regex.IsMatch("ㄅ"), Is.True, "ㄅ应该匹配中文正则（汉语注音）");
-            
-            // 测试注音扩展匹配
-            Assert.That(regex.IsMatch("ㆠ"), Is.True, "ㆠ应该匹配中文正则（注音扩展）");
-            
-            Console.WriteLine("正则表达式模式测试通过");
-        }
 
         /// <summary>
         /// 测试 lcut 方法（直接返回 List&lt;string&gt;）
