@@ -9,13 +9,13 @@ namespace JiebaNet.Segmenter.Common
     /// Unicode Grapheme Cluster（字形簇）辅助类
     /// 用于正确处理复杂emoji序列，包括ZWJ、变体选择符、肤色修饰符等
     /// </summary>
-    public static class GraphemeClusterHelper
+    internal static class GraphemeClusterHelper
     {
         /// <summary>
         /// 将字符串分割为Grapheme Cluster列表
         /// 每个Grapheme Cluster代表一个用户感知的字符（包括复杂emoji序列）
         /// </summary>
-        public static List<string> SplitToGraphemes(string text)
+        internal static List<string> SplitToGraphemes(string text)
         {
             var result = new List<string>();
             if (string.IsNullOrEmpty(text))
@@ -33,7 +33,7 @@ namespace JiebaNet.Segmenter.Common
         /// <summary>
         /// 将Span分割为Grapheme Cluster列表
         /// </summary>
-        public static List<string> SplitToGraphemes(ReadOnlySpan<char> text)
+        internal static List<string> SplitToGraphemes(ReadOnlySpan<char> text)
         {
             return SplitToGraphemes(text.ToString());
         }
@@ -41,7 +41,7 @@ namespace JiebaNet.Segmenter.Common
         /// <summary>
         /// 获取字符串中的Grapheme Cluster数量
         /// </summary>
-        public static int GetGraphemeCount(string text)
+        internal static int GetGraphemeCount(string text)
         {
             if (string.IsNullOrEmpty(text))
                 return 0;
@@ -52,7 +52,7 @@ namespace JiebaNet.Segmenter.Common
         /// <summary>
         /// 获取指定Grapheme索引对应的char起始位置
         /// </summary>
-        public static int GetCharIndexFromGraphemeIndex(string text, int graphemeIndex)
+        internal static int GetCharIndexFromGraphemeIndex(string text, int graphemeIndex)
         {
             if (string.IsNullOrEmpty(text) || graphemeIndex < 0)
                 return -1;
@@ -76,7 +76,7 @@ namespace JiebaNet.Segmenter.Common
         /// 检查Grapheme Cluster是否为emoji
         /// 通过检查是否包含emoji范围的字符来判断
         /// </summary>
-        public static bool IsEmojiGrapheme(string grapheme)
+        internal static bool IsEmojiGrapheme(string grapheme)
         {
             if (string.IsNullOrEmpty(grapheme))
                 return false;
@@ -217,7 +217,7 @@ namespace JiebaNet.Segmenter.Common
         /// <summary>
         /// 获取Grapheme Cluster的详细信息
         /// </summary>
-        public static GraphemeInfo GetGraphemeInfo(string grapheme)
+        internal static GraphemeInfo GetGraphemeInfo(string grapheme)
         {
             var info = new GraphemeInfo
             {
@@ -279,7 +279,7 @@ namespace JiebaNet.Segmenter.Common
     /// <summary>
     /// Grapheme Cluster信息
     /// </summary>
-    public class GraphemeInfo
+    internal class GraphemeInfo
     {
         public string Text { get; set; } = string.Empty;
         public int CharLength { get; set; }
@@ -291,7 +291,7 @@ namespace JiebaNet.Segmenter.Common
     /// <summary>
     /// Emoji类型
     /// </summary>
-    public enum EmojiType
+    internal enum EmojiType
     {
         None,
         Simple,              // 简单emoji (单个Rune)

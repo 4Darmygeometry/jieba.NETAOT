@@ -27,13 +27,13 @@ namespace JiebaNet.Segmenter
     /// - 注音扩展（Bopomofo Extended）：0x31A0-0x31BF，32字
     /// - 〇（IDEOGRAPHIC NUMBER ZERO）：0x3007，1字
     /// </remarks>
-    public static class GB18030_2022
+    internal static class GB18030_2022
     {
         /// <summary>
         /// CJK统一汉字范围定义
         /// 元组格式：(名称, 起始码点, 结束码点)
         /// </summary>
-        public static readonly (string Name, int Start, int End)[] CJK_RANGES =
+        internal static readonly (string Name, int Start, int End)[] CJK_RANGES =
         {
             ("CJK Unified Ideographs (基本区含补区)", 0x4E00, 0x9FFF),
             ("CJK Extension A (扩展A含补区)", 0x3400, 0x4DBF),
@@ -87,7 +87,7 @@ namespace JiebaNet.Segmenter
         /// <remarks>
         /// 此方法支持代理对，可以正确识别扩展B-I区的字符。
         /// </remarks>
-        public static bool IsChineseCharacter(string text, int index)
+        internal static bool IsChineseCharacter(string text, int index)
         {
             if (string.IsNullOrEmpty(text) || index < 0 || index >= text.Length)
                 return false;
@@ -170,7 +170,7 @@ namespace JiebaNet.Segmenter
         /// 此方法支持代理对，可以正确识别扩展B-I区的字符。
         /// 用于高性能Span场景，避免字符串分配。
         /// </remarks>
-        public static bool IsChineseCharacter(ReadOnlySpan<char> span, int index)
+        internal static bool IsChineseCharacter(ReadOnlySpan<char> span, int index)
         {
             if (span.IsEmpty || index < 0 || index >= span.Length)
                 return false;
@@ -248,7 +248,7 @@ namespace JiebaNet.Segmenter
         /// </summary>
         /// <param name="codePoint">Unicode码点</param>
         /// <returns>如果是中文字符返回true，否则返回false</returns>
-        public static bool IsChineseCodePoint(int codePoint)
+        internal static bool IsChineseCodePoint(int codePoint)
         {
             // 基本区：0x4E00-0x9FFF
             if (codePoint >= 0x4E00 && codePoint <= 0x9FFF)
@@ -325,7 +325,7 @@ namespace JiebaNet.Segmenter
         /// - 扩展I区：高位代理 0xD87A-0xD87B
         /// - 扩展G-H区：高位代理 0xD880-0xD888
         /// </remarks>
-        public static bool IsCJKHighSurrogate(char c)
+        internal static bool IsCJKHighSurrogate(char c)
         {
             // 扩展B-F区和I区：0xD840-0xD87F
             if (c >= '\uD840' && c <= '\uD87F')
@@ -354,7 +354,7 @@ namespace JiebaNet.Segmenter
         /// - 汉字笔画：\u31C0-\u31E5
         /// 格式：[\u3007\u2FF0-\u2FFF\u3105-\u312F\u31A0-\u31E5\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF]
         /// </remarks>
-        public static string ChineseFullPattern =>
+        internal static string ChineseFullPattern =>
             @"[\u3007\u2FF0-\u2FFF\u3105-\u312F\u31A0-\u31E5\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF]";
 
         /// <summary>
@@ -369,7 +369,7 @@ namespace JiebaNet.Segmenter
         /// - 中文人名：ChineseQuantifierPattern + "{2,4}" → 匹配2-4个字的人名
         /// - 中文数量词："\d+" + ChineseQuantifierPattern + "+" → 匹配"3个工作日"
         /// </remarks>
-        public static string ChineseQuantifierPattern =>
+        internal static string ChineseQuantifierPattern =>
             @"(?:[\u3007\u2FF0-\u2FFF\u3105-\u312F\u31A0-\u31E5\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF])";
 
         /// <summary>
@@ -382,13 +382,13 @@ namespace JiebaNet.Segmenter
         /// 代理对高位使用 \uD87F 而非 \uD87B，确保排除范围覆盖完整代理对区域。
         /// BMP中文区范围：\u3007（〇）\u2FF0-\u2FFF（汉字结构）\u3105-\u312F（汉语注音）\u31A0-\u31E5（注音扩展+笔画）\u3400-\u4DBF（扩展A区）\u4E00-\u9FFF（基本区）
         /// </remarks>
-        public static string ChineseStopClass =>
+        internal static string ChineseStopClass =>
             @"\s\uD840-\uD87F\uD880-\uD888\u3007\u2FF0-\u2FFF\u3105-\u312F\u31A0-\u31E5\u3400-\u4DBF\u4E00-\u9FFF，。、；：！？""''）】》";
 
         /// <summary>
         /// 获取中文字符正则表达式（完整范围，已编译）
         /// </summary>
-        public static Regex ChineseFullRegex { get; } = new(ChineseFullPattern, RegexOptions.Compiled);
+        internal static Regex ChineseFullRegex { get; } = new(ChineseFullPattern, RegexOptions.Compiled);
 
         /// <summary>
         /// 获取包含代理对的中文正则表达式模式（用于分割文本）
@@ -398,13 +398,13 @@ namespace JiebaNet.Segmenter
         /// 使用非捕获组(?:...)避免Split方法产生额外的捕获组内容。
         /// 格式：(?:[\u3007\u2FF0-\u2FFF\u3105-\u312F\u31A0-\u31E5\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF])+
         /// </remarks>
-        public static string ChineseBlockPattern =>
+        internal static string ChineseBlockPattern =>
             @"(?:[\u3007\u2FF0-\u2FFF\u3105-\u312F\u31A0-\u31E5\u3400-\u4DBF\u4E00-\u9FFF]|[\uD840-\uD87B][\uDC00-\uDFFF]|[\uD880-\uD888][\uDC00-\uDFFF])+";
 
         /// <summary>
         /// 获取中文块正则表达式（已编译）
         /// </summary>
-        public static Regex ChineseBlockRegex { get; } = new(ChineseBlockPattern, RegexOptions.Compiled);
+        internal static Regex ChineseBlockRegex { get; } = new(ChineseBlockPattern, RegexOptions.Compiled);
 
         /// <summary>
         /// 获取中文+字母数字混合块正则表达式模式
@@ -420,7 +420,7 @@ namespace JiebaNet.Segmenter
         /// <summary>
         /// 获取中文+字母数字混合块正则表达式（已编译）
         /// </summary>
-        public static Regex ChineseMixedBlockRegex { get; } = new(ChineseMixedBlockPattern, RegexOptions.Compiled);
+        internal static Regex ChineseMixedBlockRegex { get; } = new(ChineseMixedBlockPattern, RegexOptions.Compiled);
 
         /// <summary>
         /// 将文本分割成中文块和非中文块
@@ -431,7 +431,7 @@ namespace JiebaNet.Segmenter
         /// 此方法正确处理代理对，将扩展B-I区的字符作为中文块的一部分。
         /// 每个块标记是否为中文块。
         /// </remarks>
-        public static List<(string Text, bool IsChinese)> SplitText(string text)
+        internal static List<(string Text, bool IsChinese)> SplitText(string text)
         {
             var result = new List<(string Text, bool IsChinese)>();
             if (string.IsNullOrEmpty(text))
@@ -472,7 +472,7 @@ namespace JiebaNet.Segmenter
         /// 此方法正确处理代理对，将扩展B-I区的字符作为中文块的一部分。
         /// 中文+字母数字混合块包括：中文、字母、数字、+#&\._%·-
         /// </remarks>
-        public static List<(string Text, bool IsMixed)> SplitTextMixed(string text)
+        internal static List<(string Text, bool IsMixed)> SplitTextMixed(string text)
         {
             var result = new List<(string Text, bool IsMixed)>();
             if (string.IsNullOrEmpty(text))

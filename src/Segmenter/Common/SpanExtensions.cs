@@ -10,13 +10,13 @@ namespace JiebaNet.Segmenter.Common
     /// 减少字符串分配，提升分词性能
     /// 此方法只处理英文，处理中文请使用GB18030_2022.cs
     /// </summary>
-    public static class SpanExtensions
+    internal static class SpanExtensions
     {
         /// <summary>
         /// 使用Span进行字符串切片，避免Substring分配
         /// 仅在需要字符串时才创建新实例
         /// </summary>
-        public static ReadOnlySpan<char> AsSpanSlice(this string s, int startIndex, int length)
+        internal static ReadOnlySpan<char> AsSpanSlice(this string s, int startIndex, int length)
         {
             if (string.IsNullOrEmpty(s) || startIndex < 0 || length < 0 || startIndex + length > s.Length)
             {
@@ -28,7 +28,7 @@ namespace JiebaNet.Segmenter.Common
         /// <summary>
         /// 使用Span进行字符串切片（从startIndex到末尾）
         /// </summary>
-        public static ReadOnlySpan<char> AsSpanFrom(this string s, int startIndex)
+        internal static ReadOnlySpan<char> AsSpanFrom(this string s, int startIndex)
         {
             if (string.IsNullOrEmpty(s) || startIndex < 0 || startIndex >= s.Length)
             {
@@ -40,7 +40,7 @@ namespace JiebaNet.Segmenter.Common
         /// <summary>
         /// 高效比较两个字符序列是否相等
         /// </summary>
-        public static bool SequenceEqual(this ReadOnlySpan<char> span, string value)
+        internal static bool SequenceEqual(this ReadOnlySpan<char> span, string value)
         {
             return span.SequenceEqual(value.AsSpan());
         }
@@ -48,7 +48,7 @@ namespace JiebaNet.Segmenter.Common
         /// <summary>
         /// 高效比较两个字符序列是否相等（忽略大小写）
         /// </summary>
-        public static bool SequenceEqualIgnoreCase(this ReadOnlySpan<char> span, string value)
+        internal static bool SequenceEqualIgnoreCase(this ReadOnlySpan<char> span, string value)
         {
             return span.Equals(value.AsSpan(), StringComparison.OrdinalIgnoreCase);
         }
@@ -58,7 +58,7 @@ namespace JiebaNet.Segmenter.Common
         /// <summary>
         /// 检查字符是否为ASCII字母或数字
         /// </summary>
-        public static bool IsAsciiAlphanumeric(this char c)
+        internal static bool IsAsciiAlphanumeric(this char c)
         {
             return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
         }
@@ -67,7 +67,7 @@ namespace JiebaNet.Segmenter.Common
         /// 使用ArrayPool创建临时字符串，减少GC压力
         /// 用于高频临时字符串操作
         /// </summary>
-        public static string ToStringPooled(this ReadOnlySpan<char> span)
+        internal static string ToStringPooled(this ReadOnlySpan<char> span)
         {
             return span.ToString();
         }
@@ -75,7 +75,7 @@ namespace JiebaNet.Segmenter.Common
         /// <summary>
         /// 计算字符序列的哈希值（用于字典查找）
         /// </summary>
-        public static int GetSpanHashCode(this ReadOnlySpan<char> span)
+        internal static int GetSpanHashCode(this ReadOnlySpan<char> span)
         {
 #if NET48 || NETSTANDARD2_0 || NETSTANDARD2_1
             // 对于旧框架和.NET Standard 2.1，使用简单的哈希算法
@@ -97,7 +97,7 @@ namespace JiebaNet.Segmenter.Common
         /// <summary>
         /// 比较两个字符序列是否相等
         /// </summary>
-        public static bool SpanEquals(this ReadOnlySpan<char> left, ReadOnlySpan<char> right)
+        internal static bool SpanEquals(this ReadOnlySpan<char> left, ReadOnlySpan<char> right)
         {
             return left.SequenceEqual(right);
         }
@@ -106,7 +106,7 @@ namespace JiebaNet.Segmenter.Common
     /// <summary>
     /// 高性能字符缓冲区，用于分词过程中的临时字符串构建
     /// </summary>
-    public ref struct SpanBuffer
+    internal ref struct SpanBuffer
     {
         private Span<char> _buffer;
         private int _length;
@@ -157,14 +157,14 @@ namespace JiebaNet.Segmenter.Common
     /// 基于Span的字典查找辅助类
     /// 用于在不创建字符串的情况下查找字典
     /// </summary>
-    public static class SpanDictionaryHelper
+    internal static class SpanDictionaryHelper
     {
         /// <summary>
         /// 使用Span作为键查找字典
         /// 通过遍历字典进行匹配（适用于小字典）
         /// 对于大字典，建议使用专门的Span字典实现
         /// </summary>
-        public static bool TryGetValue<TKey, TValue>(
+        internal static bool TryGetValue<TKey, TValue>(
             IDictionary<TKey, TValue> dictionary,
             ReadOnlySpan<char> key,
             out TValue value,
@@ -188,7 +188,7 @@ namespace JiebaNet.Segmenter.Common
         /// 优化的字符串字典查找
         /// 先尝试使用现有字符串实例，避免创建新字符串
         /// </summary>
-        public static bool TryGetValueOptimized(
+        internal static bool TryGetValueOptimized(
             IDictionary<string, int> dictionary,
             ReadOnlySpan<char> key,
             out int value)
