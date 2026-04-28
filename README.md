@@ -6,6 +6,8 @@ jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的
 
 如果您在开发中遇到与分词有关的需求或困难，请提交一个Issue，I see u:)
 
+TIPS：假如您使用.NET 10及以上，或者多TFM构建不包含低于.NET 10的TFM；我建议您使用 [AOTba.net10p](https://github.com/4Darmygeometry/AOTba.net10p) 以获得更好性能。
+
 ## 特点
 
 * 支持三种分词模式：
