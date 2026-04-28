@@ -1,6 +1,6 @@
 jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的.NET版本（C#实现），支持AOT编译。
 
-当前版本为1.0.11，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式（如须使用paddle模式，请见https://github.com/sdcb/PaddleSharp/blob/master/docs%2Fpaddlenlp-lac.md ）。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
+当前版本为1.1.0，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式（如须使用paddle模式，请见https://github.com/sdcb/PaddleSharp/blob/master/docs%2Fpaddlenlp-lac.md ）。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
 
 此外，也提供了 `KeywordProcessor`，参考 [FlashText](https://github.com/vi3k6i5/flashtext) 实现。`KeywordProcessor` 可以更灵活地从文本中提取**词典中的关键词**，比如忽略大小写、含空格的词等。
 
@@ -150,7 +150,6 @@ AOT情形下含Emoji句子断句测试
 
 ```
 === AOTba AOT 兼容性测试 ===
-
 [测试] 精确模式分词...
   结果: 我╱来到╱北京╱清华大学
   通过 ✓
@@ -323,14 +322,6 @@ AOT情形下含Emoji句子断句测试
   结果: 从╱𧒽岗╱出发╱，╱经过╱石𬒔╱，╱最后╱去╱吃╱𰻝𰻝面
   测试6: 二〇一〇年
   结果: 二〇一〇年
-  测试7: 汉字笔画㇐是横
-  结果: 汉字╱笔画╱㇐是横
-  测试8: 汉字结构⿰表示左右结构
-  结果: 汉字结构╱⿰╱表示╱左右╱结构
-  测试9: 汉语注音ㄅ是玻
-  结果: 汉语╱注音╱ㄅ是玻
-  测试10: 注音扩展ㆠ用于方言
-  结果: 注音╱扩展╱ㆠ╱用于╱方言
   通过 ✓
 [测试] EntityProtect.Disabled 禁用实体保护（OpenCC场景）...
   测试1: 2026年4月30日晚上9点开会
@@ -342,7 +333,6 @@ AOT情形下含Emoji句子断句测试
   测试4: 我来到北京清华大学
   结果: 我╱来到╱北京╱清华大学
   通过 ✓
-
 === 所有AOT测试通过！ ===
 ```
 
