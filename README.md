@@ -1,6 +1,6 @@
 jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的.NET版本（C#实现），支持AOT编译。
 
-当前版本为1.0.10，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式（如须使用paddle模式，请见https://github.com/sdcb/PaddleSharp/blob/master/docs%2Fpaddlenlp-lac.md ）。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
+当前版本为1.0.11，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式（如须使用paddle模式，请见https://github.com/sdcb/PaddleSharp/blob/master/docs%2Fpaddlenlp-lac.md ）。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
 
 此外，也提供了 `KeywordProcessor`，参考 [FlashText](https://github.com/vi3k6i5/flashtext) 实现。`KeywordProcessor` 可以更灵活地从文本中提取**词典中的关键词**，比如忽略大小写、含空格的词等。
 
@@ -39,8 +39,6 @@ jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的
 ## 安装和配置
 
 安装配置前需确保Visual Studio版本在2026及以上
-
-从版本1.0.2开始，netstandard基线从2.0升级为2.1（与.NET Framework 4.8同年推出），以更好处理2019年及之后的emoji。
 
 当前版本支持net10.0、net48、netstandard2.0和netstandard2.1（兼容.NET 6+），可以手动引用项目，也可以通过NuGet添加引用：
 
@@ -247,6 +245,18 @@ AOT情形下含Emoji句子断句测试
   结果: 再╱等╱十九分二十秒╱，╱就要╱结束╱考试╱了
   测试27: 再等19分20秒，就要结束考试了
   结果: 再╱等╱19分20秒╱，╱就要╱结束╱考试╱了
+  测试28: 我是二零一零年出生的
+  结果: 我╱是╱二零一零年╱出生╱的
+  测试29: 我是二〇一〇年出生的
+  结果: 我╱是╱二〇一〇年╱出生╱的
+  测试30: 我是二零一零年五月出生的
+  结果: 我╱是╱二零一零年五月╱出生╱的
+  测试31: 我是二〇一〇年五月出生的
+  结果: 我╱是╱二〇一〇年五月╱出生╱的
+  测试32: 我是二零一零年五月一日出生的
+  结果: 我╱是╱二零一零年五月一日╱出生╱的
+  测试33: 我是二〇一〇年五月一日出生的
+  结果: 我╱是╱二〇一〇年五月一日╱出生╱的
   通过 ✓
 [测试] 日期时间词性标注...
   测试1: 今天4:50某某某领了一只记号笔
@@ -311,6 +321,16 @@ AOT情形下含Emoji句子断句测试
   结果: 半径╱的╱日本新字体╱字形╱是╱半𮱻╱，╱繁体╱写作╱半徑
   测试5: 从𧒽岗出发，经过石𬒔，最后去吃𰻝𰻝面
   结果: 从╱𧒽岗╱出发╱，╱经过╱石𬒔╱，╱最后╱去╱吃╱𰻝𰻝面
+  测试6: 二〇一〇年
+  结果: 二〇一〇年
+  测试7: 汉字笔画㇐是横
+  结果: 汉字╱笔画╱㇐是横
+  测试8: 汉字结构⿰表示左右结构
+  结果: 汉字结构╱⿰╱表示╱左右╱结构
+  测试9: 汉语注音ㄅ是玻
+  结果: 汉语╱注音╱ㄅ是玻
+  测试10: 注音扩展ㆠ用于方言
+  结果: 注音╱扩展╱ㆠ╱用于╱方言
   通过 ✓
 [测试] EntityProtect.Disabled 禁用实体保护（OpenCC场景）...
   测试1: 2026年4月30日晚上9点开会
