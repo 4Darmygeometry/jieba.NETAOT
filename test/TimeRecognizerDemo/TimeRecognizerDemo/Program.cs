@@ -1,4 +1,4 @@
-﻿using JiebaNet.Segmenter;
+using JiebaNet.Segmenter;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -167,6 +167,32 @@ class TimeRecognizerDemo
             ("九点整", "time"),
         };
         RunTest(recognizer, filterText, filterExpected);
+
+        // ========== 10. 中文数字年份识别 ==========
+        Console.WriteLine("【场景十：中文数字年份识别】");
+        var chineseYearText = "我是二零一零年出生的，" +
+                             "二〇一〇年五月一日是重要日子，" +
+                             "二零二一年五月是项目启动时间";
+        var chineseYearExpected = new[]
+        {
+            ("二零一零年", "year"),
+            ("二〇一〇年五月一日", "datetimex"),
+            ("二零二一年五月", "yearmonth"),
+        };
+        RunTest(recognizer, chineseYearText, chineseYearExpected);
+
+        // ========== 11. GB18030-2022补充区块 ==========
+        Console.WriteLine("【场景十一：GB18030-2022补充区块】");
+        var gb18030Text = "二〇一〇年，" +
+                         "汉字笔画㇐是横，" +
+                         "汉字结构⿰表示左右结构，" +
+                         "汉语注音ㄅ是玻，" +
+                         "注音扩展ㆠ用于方言";
+        var gb18030Expected = new[]
+        {
+            ("二〇一〇年", "year"),
+        };
+        RunTest(recognizer, gb18030Text, gb18030Expected);
 
         // ========== 测试结果汇总 ==========
         Console.WriteLine("\n=== 测试结果汇总 ===");

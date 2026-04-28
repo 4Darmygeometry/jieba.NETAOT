@@ -727,6 +727,78 @@ class Program
                 return false;
             }
 
+            // 测试28：中文数字年份"二零一零年"应该作为整体
+            var text28 = "我是二零一零年出生的";
+            var result28 = segmenter.Cut(text28).ToList();
+            var joined28 = string.Join("╱", result28);
+            Console.WriteLine($"  测试28: {text28}");
+            Console.WriteLine($"  结果: {joined28}");
+            if (!result28.Contains("二零一零年"))
+            {
+                Console.WriteLine("  失败 ✗ '二零一零年'未被正确识别为整体年份");
+                return false;
+            }
+
+            // 测试29：中文数字年份"二〇一〇年"应该作为整体
+            var text29 = "我是二〇一〇年出生的";
+            var result29 = segmenter.Cut(text29).ToList();
+            var joined29 = string.Join("╱", result29);
+            Console.WriteLine($"  测试29: {text29}");
+            Console.WriteLine($"  结果: {joined29}");
+            if (!result29.Contains("二〇一〇年"))
+            {
+                Console.WriteLine("  失败 ✗ '二〇一〇年'未被正确识别为整体年份");
+                return false;
+            }
+
+            // 测试30：中文年月"二零一零年五月"应该作为整体
+            var text30 = "我是二零一零年五月出生的";
+            var result30 = segmenter.Cut(text30).ToList();
+            var joined30 = string.Join("╱", result30);
+            Console.WriteLine($"  测试30: {text30}");
+            Console.WriteLine($"  结果: {joined30}");
+            if (!result30.Contains("二零一零年五月"))
+            {
+                Console.WriteLine("  失败 ✗ '二零一零年五月'未被正确识别为整体年月");
+                return false;
+            }
+
+            // 测试31：中文年月"二〇一〇年五月"应该作为整体
+            var text31 = "我是二〇一〇年五月出生的";
+            var result31 = segmenter.Cut(text31).ToList();
+            var joined31 = string.Join("╱", result31);
+            Console.WriteLine($"  测试31: {text31}");
+            Console.WriteLine($"  结果: {joined31}");
+            if (!result31.Contains("二〇一〇年五月"))
+            {
+                Console.WriteLine("  失败 ✗ '二〇一〇年五月'未被正确识别为整体年月");
+                return false;
+            }
+
+            // 测试32：中文完整日期"二零一零年五月一日"应该作为整体
+            var text32 = "我是二零一零年五月一日出生的";
+            var result32 = segmenter.Cut(text32).ToList();
+            var joined32 = string.Join("╱", result32);
+            Console.WriteLine($"  测试32: {text32}");
+            Console.WriteLine($"  结果: {joined32}");
+            if (!result32.Contains("二零一零年五月一日"))
+            {
+                Console.WriteLine("  失败 ✗ '二零一零年五月一日'未被正确识别为整体日期");
+                return false;
+            }
+
+            // 测试33：中文完整日期"二〇一〇年五月一日"应该作为整体
+            var text33 = "我是二〇一〇年五月一日出生的";
+            var result33 = segmenter.Cut(text33).ToList();
+            var joined33 = string.Join("╱", result33);
+            Console.WriteLine($"  测试33: {text33}");
+            Console.WriteLine($"  结果: {joined33}");
+            if (!result33.Contains("二〇一〇年五月一日"))
+            {
+                Console.WriteLine("  失败 ✗ '二〇一〇年五月一日'未被正确识别为整体日期");
+                return false;
+            }
+
             Console.WriteLine("  通过 ✓");
             return true;
         }
@@ -1170,6 +1242,74 @@ class Program
             if (!result5.Contains("𧒽岗") || !result5.Contains("石𬒔") || !result5.Contains("𰻝𰻝面"))
             {
                 Console.WriteLine("  失败 ✗ 混合场景生僻字未被正确识别");
+                return false;
+            }
+
+            // 测试6：〇字符（IDEOGRAPHIC NUMBER ZERO，U+3007）
+            var text6 = "二〇一〇年";
+            var result6 = segmenter.Cut(text6).ToList();
+            var joined6 = string.Join("╱", result6);
+            Console.WriteLine($"  测试6: {text6}");
+            Console.WriteLine($"  结果: {joined6}");
+            if (!result6.Contains("二〇一〇年"))
+            {
+                Console.WriteLine("  失败 ✗ '二〇一〇年'未被正确识别（〇字符）");
+                return false;
+            }
+
+            // 测试7：汉字笔画（CJK Strokes，U+31C0-31E5）
+            // ㇐是横的笔画
+            var text7 = "汉字笔画㇐是横";
+            var result7 = segmenter.Cut(text7).ToList();
+            var joined7 = string.Join("╱", result7);
+            Console.WriteLine($"  测试7: {text7}");
+            Console.WriteLine($"  结果: {joined7}");
+            // 检查㇐是否被识别为中文字符
+            if (!GB18030_2022.IsChineseCharacter("㇐", 0))
+            {
+                Console.WriteLine("  失败 ✗ 汉字笔画'㇐'未被识别为中文字符");
+                return false;
+            }
+
+            // 测试8：汉字结构描述字符（Ideographic Description Characters，U+2FF0-2FFF）
+            // ⿰是左右结构的描述字符
+            var text8 = "汉字结构⿰表示左右结构";
+            var result8 = segmenter.Cut(text8).ToList();
+            var joined8 = string.Join("╱", result8);
+            Console.WriteLine($"  测试8: {text8}");
+            Console.WriteLine($"  结果: {joined8}");
+            // 检查⿰是否被识别为中文字符
+            if (!GB18030_2022.IsChineseCharacter("⿰", 0))
+            {
+                Console.WriteLine("  失败 ✗ 汉字结构'⿰'未被识别为中文字符");
+                return false;
+            }
+
+            // 测试9：汉语注音符号（BopOMOFO，U+3105-312F）
+            // ㄅ是注音符号"玻"
+            var text9 = "汉语注音ㄅ是玻";
+            var result9 = segmenter.Cut(text9).ToList();
+            var joined9 = string.Join("╱", result9);
+            Console.WriteLine($"  测试9: {text9}");
+            Console.WriteLine($"  结果: {joined9}");
+            // 检查ㄅ是否被识别为中文字符
+            if (!GB18030_2022.IsChineseCharacter("ㄅ", 0))
+            {
+                Console.WriteLine("  失败 ✗ 汉语注音'ㄅ'未被识别为中文字符");
+                return false;
+            }
+
+            // 测试10：注音扩展（BOPOMOFO Extended，U+31A0-31BF）
+            // ㆠ是注音扩展字符
+            var text10 = "注音扩展ㆠ用于方言";
+            var result10 = segmenter.Cut(text10).ToList();
+            var joined10 = string.Join("╱", result10);
+            Console.WriteLine($"  测试10: {text10}");
+            Console.WriteLine($"  结果: {joined10}");
+            // 检查ㆠ是否被识别为中文字符
+            if (!GB18030_2022.IsChineseCharacter("ㆠ", 0))
+            {
+                Console.WriteLine("  失败 ✗ 注音扩展'ㆠ'未被识别为中文字符");
                 return false;
             }
 
