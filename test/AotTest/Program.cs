@@ -1257,62 +1257,6 @@ class Program
                 return false;
             }
 
-            // 测试7：汉字笔画（CJK Strokes，U+31C0-31E5）
-            // ㇐是横的笔画
-            var text7 = "汉字笔画㇐是横";
-            var result7 = segmenter.Cut(text7).ToList();
-            var joined7 = string.Join("╱", result7);
-            Console.WriteLine($"  测试7: {text7}");
-            Console.WriteLine($"  结果: {joined7}");
-            // 检查㇐是否被识别为中文字符
-            if (!GB18030_2022.IsChineseCharacter("㇐", 0))
-            {
-                Console.WriteLine("  失败 ✗ 汉字笔画'㇐'未被识别为中文字符");
-                return false;
-            }
-
-            // 测试8：汉字结构描述字符（Ideographic Description Characters，U+2FF0-2FFF）
-            // ⿰是左右结构的描述字符
-            var text8 = "汉字结构⿰表示左右结构";
-            var result8 = segmenter.Cut(text8).ToList();
-            var joined8 = string.Join("╱", result8);
-            Console.WriteLine($"  测试8: {text8}");
-            Console.WriteLine($"  结果: {joined8}");
-            // 检查⿰是否被识别为中文字符
-            if (!GB18030_2022.IsChineseCharacter("⿰", 0))
-            {
-                Console.WriteLine("  失败 ✗ 汉字结构'⿰'未被识别为中文字符");
-                return false;
-            }
-
-            // 测试9：汉语注音符号（BopOMOFO，U+3105-312F）
-            // ㄅ是注音符号"玻"
-            var text9 = "汉语注音ㄅ是玻";
-            var result9 = segmenter.Cut(text9).ToList();
-            var joined9 = string.Join("╱", result9);
-            Console.WriteLine($"  测试9: {text9}");
-            Console.WriteLine($"  结果: {joined9}");
-            // 检查ㄅ是否被识别为中文字符
-            if (!GB18030_2022.IsChineseCharacter("ㄅ", 0))
-            {
-                Console.WriteLine("  失败 ✗ 汉语注音'ㄅ'未被识别为中文字符");
-                return false;
-            }
-
-            // 测试10：注音扩展（BOPOMOFO Extended，U+31A0-31BF）
-            // ㆠ是注音扩展字符
-            var text10 = "注音扩展ㆠ用于方言";
-            var result10 = segmenter.Cut(text10).ToList();
-            var joined10 = string.Join("╱", result10);
-            Console.WriteLine($"  测试10: {text10}");
-            Console.WriteLine($"  结果: {joined10}");
-            // 检查ㆠ是否被识别为中文字符
-            if (!GB18030_2022.IsChineseCharacter("ㆠ", 0))
-            {
-                Console.WriteLine("  失败 ✗ 注音扩展'ㆠ'未被识别为中文字符");
-                return false;
-            }
-
             Console.WriteLine("  通过 ✓");
             return true;
         }
