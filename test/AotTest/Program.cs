@@ -1,5 +1,6 @@
 using JiebaNet.Analyser;
 using JiebaNet.Segmenter;
+using JiebaNet.Segmenter.Common;
 using JiebaNet.Segmenter.PosSeg;
 using System;
 using System.Collections.Generic;
@@ -31,6 +32,8 @@ class Program
         allPassed &= TestComplexEmojiSegment();
         allPassed &= TestTraditionalChineseSegment();
         allPassed &= TestUnicode16EmojiSegment();
+        allPassed &= TestCounter();
+        allPassed &= TestKeywordProcessor();
 
 #if AOTBA
         allPassed &= TestDateTimeSegment();
@@ -1341,4 +1344,72 @@ class Program
         }
     }
 #endif
+
+        static bool TestCounter()
+        {
+            Console.WriteLine("[测试] Counter词频统计...");
+            try
+            {
+                var s = "在数学和计算机科学之中，算法（algorithm）为任何良定义的具体计算步骤的一个序列，常用于计算、数据处理和自动推理。精确而言，算法是一个表示为有限长列表的有效方法。算法应包含清晰定义的指令用于计算函数。";
+                var seg = new JiebaSegmenter();
+                var freqs = new Counter<string>(seg.Cut(s));
+                var top5 = freqs.MostCommon(5).ToList();
+                
+                Console.WriteLine("  词频统计结果（前5）:");
+                foreach (var pair in top5)
+                {
+                    Console.WriteLine($"    {pair.Key}: {pair.Value}");
+                }
+                
+                if (top5.Count >= 5)
+                {
+                    var hasAlgorithm = top5.Any(p => p.Key == "算法");
+                    var hasCalculation = top5.Any(p => p.Key == "计算");
+                    if (hasAlgorithm && hasCalculation)
+                    {
+                        Console.WriteLine("  通过 ✓");
+                        return true;
+                    }
+                }
+                Console.WriteLine("  失败 ✗ 词频统计结果不符合预期");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  异常: {ex.Message}");
+                return false;
+            }
+        }
+
+        static bool TestKeywordProcessor()
+        {
+            Console.WriteLine("[测试] KeywordProcessor关键词提取...");
+            try
+            {
+                var kp = new KeywordProcessor();
+                kp.AddKeywords(new[] { ".NET Core", "Java", "C语言", "字典 tree", "CET-4", "网络 编程" });
+
+                var text = "你需要通过cet-4考试，学习c语言、.NET core、网络 编程、JavaScript，掌握字典 tree的用法";
+                var keywords = kp.ExtractKeywords(text).ToList();
+                
+                Console.WriteLine($"  输入: {text}");
+                Console.WriteLine($"  提取结果: {string.Join(", ", keywords)}");
+                
+                var expected = new List<string> { "CET-4", "C语言", ".NET Core", "网络 编程", "字典 tree" };
+                var allFound = expected.All(e => keywords.Contains(e));
+                
+                if (allFound && keywords.Count == expected.Count)
+                {
+                    Console.WriteLine("  通过 ✓");
+                    return true;
+                }
+                Console.WriteLine($"  失败 ✗ 期望: {string.Join(", ", expected)}");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  异常: {ex.Message}");
+                return false;
+            }
+        }
 }
