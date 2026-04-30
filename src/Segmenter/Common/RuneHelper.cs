@@ -8,6 +8,7 @@ namespace JiebaNet.Segmenter.Common
     /// Unicode Rune辅助类，用于正确处理emoji等Unicode字符
     /// 解决UTF-16代理对导致的字符拆分问题
     /// 使用System.Text.Rune进行高性能Unicode处理
+    /// net48/netstandard2.0/netstandard2.1下，由Shim.System.Text.Rune 6.0.2提供完整API
     /// </summary>
     internal static class RuneHelper
     {
@@ -48,18 +49,12 @@ namespace JiebaNet.Segmenter.Common
             if (string.IsNullOrEmpty(text))
                 return 0;
 
-#if NET48
-            // 对于旧框架，使用StringInfo计算
-            return new System.Globalization.StringInfo(text).LengthInTextElements;
-#else
-            // .NET Standard 2.1+ 和 .NET Core 3.0+ 使用EnumerateRunes计算
             var count = 0;
             foreach (var _ in text.EnumerateRunes())
             {
                 count++;
             }
             return count;
-#endif
         }
 
         /// <summary>
@@ -70,18 +65,12 @@ namespace JiebaNet.Segmenter.Common
             if (text.IsEmpty)
                 return 0;
 
-#if NET48
-            // 对于旧框架，使用StringInfo计算
-            return new System.Globalization.StringInfo(text.ToString()).LengthInTextElements;
-#else
-            // .NET Standard 2.1+ 和 .NET Core 3.0+ 使用EnumerateRunes计算
             var count = 0;
             foreach (var _ in text.EnumerateRunes())
             {
                 count++;
             }
             return count;
-#endif
         }
 
         /// <summary>
@@ -94,32 +83,6 @@ namespace JiebaNet.Segmenter.Common
             if (string.IsNullOrEmpty(text))
                 return result;
 
-#if NET48
-            // 对于旧框架，手动处理代理对
-            var i = 0;
-            while (i < text.Length)
-            {
-                if (char.IsHighSurrogate(text[i]) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
-                {
-                    // 代理对，作为一个整体处理
-                    result.Add(text.Substring(i, 2));
-                    i += 2;
-                }
-                else if (char.IsHighSurrogate(text[i]))
-                {
-                    // 单独的高代理项（不完整），作为单个字符处理
-                    result.Add(text[i].ToString());
-                    i++;
-                }
-                else
-                {
-                    // 普通字符
-                    result.Add(text[i].ToString());
-                    i++;
-                }
-            }
-#else
-            // .NET Standard 2.1+ 和 .NET Core 3.0+ 使用Rune进行高效处理
             foreach (var rune in text.EnumerateRunes())
             {
                 if (rune != Rune.ReplacementChar)
@@ -132,7 +95,6 @@ namespace JiebaNet.Segmenter.Common
                     result.Add("�");
                 }
             }
-#endif
 
             return result;
         }
@@ -146,32 +108,6 @@ namespace JiebaNet.Segmenter.Common
             if (text.IsEmpty)
                 return result;
 
-#if NET48
-            // 对于旧框架，手动处理代理对
-            var i = 0;
-            while (i < text.Length)
-            {
-                if (char.IsHighSurrogate(text[i]) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
-                {
-                    // 代理对，作为一个整体处理
-                    result.Add(text.Slice(i, 2).ToString());
-                    i += 2;
-                }
-                else if (char.IsHighSurrogate(text[i]))
-                {
-                    // 单独的高代理项（不完整），作为单个字符处理
-                    result.Add(text[i].ToString());
-                    i++;
-                }
-                else
-                {
-                    // 普通字符
-                    result.Add(text[i].ToString());
-                    i++;
-                }
-            }
-#else
-            // .NET Standard 2.1+ 和 .NET Core 3.0+ 使用Rune进行高效处理
             foreach (var rune in text.EnumerateRunes())
             {
                 if (rune != Rune.ReplacementChar)
@@ -184,7 +120,6 @@ namespace JiebaNet.Segmenter.Common
                     result.Add("�");
                 }
             }
-#endif
 
             return result;
         }
@@ -258,31 +193,11 @@ namespace JiebaNet.Segmenter.Common
                 return -1;
             }
 
-#if NET48
-            // 对于旧框架，手动处理
-            if (char.IsHighSurrogate(text[index]) && index + 1 < text.Length && char.IsLowSurrogate(text[index + 1]))
-            {
-                rune = new Rune(text[index], text[index + 1]);
-                return 2;
-            }
-            else if (!char.IsSurrogate(text[index]))
-            {
-                rune = new Rune(text[index]);
-                return 1;
-            }
-            else
-            {
-                rune = Rune.ReplacementChar;
-                return 1;
-            }
-#else
-            // .NET Standard 2.1+ 和 .NET Core 3.0+ 使用内置方法
             if (Rune.TryGetRuneAt(text, index, out rune))
             {
                 return rune.IsBmp ? 1 : 2;
             }
             return -1;
-#endif
         }
 
         /// <summary>

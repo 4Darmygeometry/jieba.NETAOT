@@ -8,6 +8,7 @@ namespace JiebaNet.Segmenter.Common
     /// <summary>
     /// Unicode Grapheme Cluster（字形簇）辅助类
     /// 用于正确处理复杂emoji序列，包括ZWJ、变体选择符、肤色修饰符等
+    /// net48/netstandard2.0/netstandard2.1下，由Shim.System.Text.Rune 6.0.2提供完整API
     /// </summary>
     internal static class GraphemeClusterHelper
     {
@@ -81,22 +82,11 @@ namespace JiebaNet.Segmenter.Common
             if (string.IsNullOrEmpty(grapheme))
                 return false;
 
-#if NET48
-            // 对于旧框架，手动检查每个字符
-            for (var i = 0; i < grapheme.Length; i++)
-            {
-                var c = grapheme[i];
-                if (IsEmojiChar(c))
-                    return true;
-            }
-#else
-            // .NET Standard 2.1+ 使用Rune进行高效处理
             foreach (var rune in grapheme.EnumerateRunes())
             {
                 if (IsEmojiRune(rune))
                     return true;
             }
-#endif
 
             // 检查是否是变体选择符或ZWJ序列
             if (grapheme.IndexOf('\uFE0F') >= 0 ||  // 变体选择符-16 (emoji样式)
@@ -184,20 +174,6 @@ namespace JiebaNet.Segmenter.Common
                    (value >= 0x1FA70 && value <= 0x1FAFF);    // 符号和象形文字扩展-A
         }
 
-#if NET48
-        /// <summary>
-        /// 检查字符是否为emoji基础字符（用于旧框架）
-        /// </summary>
-        private static bool IsEmojiChar(char c)
-        {
-            // 检查基本多语言平面内的emoji
-            if (IsEmojiInBmp((int)c))
-                return true;
-
-            // 高代理项可能是emoji代理对的第一部分
-            return char.IsHighSurrogate(c);
-        }
-#else
         /// <summary>
         /// 检查Rune是否为emoji基础字符
         /// </summary>
@@ -212,7 +188,6 @@ namespace JiebaNet.Segmenter.Common
             // 检查补充平面的emoji
             return IsEmojiInSupplementaryPlanes(value);
         }
-#endif
 
         /// <summary>
         /// 获取Grapheme Cluster的详细信息
@@ -226,28 +201,10 @@ namespace JiebaNet.Segmenter.Common
                 RuneCount = 0
             };
 
-#if NET48
-            // 对于旧框架，手动计算Rune数量
-            var i = 0;
-            while (i < grapheme.Length)
-            {
-                if (char.IsHighSurrogate(grapheme[i]) && i + 1 < grapheme.Length && char.IsLowSurrogate(grapheme[i + 1]))
-                {
-                    i += 2;
-                }
-                else
-                {
-                    i++;
-                }
-                info.RuneCount++;
-            }
-#else
-            // .NET Standard 2.1+ 使用EnumerateRunes
             foreach (var _ in grapheme.EnumerateRunes())
             {
                 info.RuneCount++;
             }
-#endif
 
             info.IsEmoji = IsEmojiGrapheme(grapheme);
             
