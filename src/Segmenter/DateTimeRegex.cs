@@ -92,6 +92,8 @@ namespace JiebaNet.Segmenter
         private const string V_Core = @"\d+\.\d+(?:\.\d+)?";
         // 预发布标签（如-alpha1、-beta2、-rc1）
         private const string V_Prerelease = @"(?:-(?:alpha|beta|rc|preview|pre|dev|snapshot|release|build|hotfix|patch|major|minor|final|batch)\d*)?";
+        // LTS标签（如LTS、lts，长期支持/长期维护版本）
+        private const string V_LTS = @"(?:\s*(?:LTS|lts))?";
         // 中文后缀（如版本、版、旧版本）- 使用静态只读字段因为引用了非常量属性
         private static readonly string V_ChineseSuffix = @"(?:" + GB18030_2022.ChineseQuantifierPattern + @"*?版(?:本?))";
 
@@ -326,22 +328,23 @@ namespace JiebaNet.Segmenter
             RegexOptions.Compiled);
 
         // ========== 19. 版本号 ==========
-        // 格式：v1.0.1、1.0.1、3.2-preview1、4.1.2-rc1、2.1-alpha1、6.3-beta2
-        // 注意：版本号至少两个数字部分，可带预发布标签
+        // 格式：v1.0.1、1.0.1、3.2-preview1、4.1.2-rc1、2.1-alpha1、6.3-beta2、18.04 LTS、v20 LTS
+        // 注意：版本号至少两个数字部分，可带预发布标签和LTS标签
         // 注意：版本号后面不能跟"%"（百分比）或其他非版本号字符
         // 注意：纯数字如1.0、2.0、2.10不应被识别为版本号，除非有上下文：
         //   - 前置上下文：版本1.0、版本号2.0
         //   - 后置上下文：1.0版本、3.0版、5.2旧版本、2.1老版本、2.2xx版本
         //   - v/V前缀：v1.0.1、V2.0
         // 注意：v/V前缀的版本号后面可跟中文上下文（如v3.2.1版本），需整体匹配
+        // 注意：LTS（Long Term Support）标签可出现在版本号后（如18.04 LTS、v20 LTS）
         // 注意：中文部分使用ChineseQuantifierPattern匹配不定长中文（含GB18030-2022扩展B-I区生僻字）
-        // 注意：使用V_Core、V_Prerelease、V_ChineseSuffix常量避免重复
+        // 注意：使用V_Core、V_Prerelease、V_LTS、V_ChineseSuffix常量避免重复
         private static readonly Regex VersionRegex = new(
-            // 模式1：v/V前缀版本号（中文上下文可选）
-            @"(?:v|V)" + V_Core + V_Prerelease + V_ChineseSuffix + @"?" +
+            // 模式1：v/V前缀版本号（LTS和中文上下文可选）
+            @"(?:v|V)" + V_Core + V_Prerelease + V_LTS + V_ChineseSuffix + @"?" +
             @"(?![\d.%])" +
-            // 模式2：无前缀版本号（必须有中文上下文）
-            @"|" + V_Core + V_Prerelease + V_ChineseSuffix +
+            // 模式2：无前缀版本号（必须有LTS或中文上下文）
+            @"|" + V_Core + V_Prerelease + V_LTS + V_ChineseSuffix +
             @"(?![\d.%])" +
             // 模式3：前置固定中文上下文+版本号（如版本1.0、候选版本4.1.2-rc1）
             // 注意：前置上下文只能匹配固定词汇，不能无限贪婪匹配任意中文字符
@@ -350,7 +353,7 @@ namespace JiebaNet.Segmenter
             @"(?:" + C_软件 + @"|" + C_系统 + @"|" + C_固件 + @"|" + C_应用 + @"|" + C_程序 + @"|" + C_产品 + @"|" +
             C_当前 + @"|最新|[" + C_旧 + @"]|老|新|" + C_稳定 + @"|" + C_测试 + @"|" + C_开发 + @"|" + C_预览 + @"|" + C_候选 + @"|" +
             @"(?:alpha|beta|rc|release))版本" +
-            @")" + V_Core + V_Prerelease +
+            @")" + V_Core + V_Prerelease + V_LTS +
             @"(?![\d.%])",
             RegexOptions.Compiled);
 

@@ -77,20 +77,18 @@ namespace JiebaNet.Segmenter.Common
         /// </summary>
         internal static int GetSpanHashCode(this ReadOnlySpan<char> span)
         {
-#if NET48 || NETSTANDARD2_0 || NETSTANDARD2_1
-            // 对于旧框架和.NET Standard 2.1，使用简单的哈希算法
-            unchecked
-            {
-                int hash = 17;
-                foreach (var c in span)
-                {
-                    hash = hash * 31 + c;
-                }
-                return hash;
-            }
-#else
-            // .NET 5+ 使用内置方法
+#if NET5_0_OR_GREATER
+            // .NET 5+ 有优化的 Span 哈希
             return string.GetHashCode(span);
+#else
+            // netstandard2.1: 内置 HashCode
+            // netstandard2.0 / net48: Microsoft.Bcl.HashCode 垫片
+            var hash = new HashCode();
+            foreach (var c in span)
+            {
+                hash.Add(c);
+            }
+            return hash.ToHashCode();
 #endif
         }
 
