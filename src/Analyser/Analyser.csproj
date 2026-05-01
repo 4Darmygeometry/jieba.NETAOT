@@ -22,20 +22,12 @@
     <IsAotCompatible>false</IsAotCompatible>
   </PropertyGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net48'">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'net48'">
     <PackageReference Include="PolySharp" Version="1.15.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-	<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.7" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="PolySharp" Version="1.15.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
-	<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.7" />
   </ItemGroup>
 
   <ItemGroup>
