@@ -1,6 +1,6 @@
 jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的.NET版本（C#实现），支持AOT编译。
 
-当前版本为1.1.3 LTS，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式（如须使用paddle模式，请见https://github.com/sdcb/PaddleSharp/blob/master/docs%2Fpaddlenlp-lac.md ）。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
+当前版本为1.1.4，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式（如须使用paddle模式，请见https://github.com/sdcb/PaddleSharp/blob/master/docs%2Fpaddlenlp-lac.md ）。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
 
 此外，也提供了 `KeywordProcessor`，参考 [FlashText](https://github.com/vi3k6i5/flashtext) 实现。`KeywordProcessor` 可以更灵活地从文本中提取**词典中的关键词**，比如忽略大小写、含空格的词等。
 
@@ -21,13 +21,15 @@ jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的
 * 支持完整提取带下划线/短线单词（如TF-IDF）
 * 支持版本号提取（如v1.0.1、1.0.1、3.2-preview1、4.1.2-rc1、2.1-alpha1、6.3-beta2）
 * 支持异步加载词典
-* 支持TF-IDF、TextRank算法关键词提取
+* 支持TF-IDF、TextRank、KeywordProcessor算法关键词提取
+* Counter词频统计支持统计emoji与过滤emoji两种模式，适合不同类型的词云图制作
 * 支持日期、时间、链接、版本号等实体提取
 * 支持含Emoji句子断句
 * 支持带变体选择符和ZWJ的复杂emoji断句（甚至支持到Unicode 16的emoji）
 * 支持开启或关闭实体保护，以便OpenCC.NET调用
 * 全面支持GB18030-2022级别3及一号修改单要求（基本区到扩展I区汉字、〇及康熙部首处理能力）
-* 可AOT编译
+* 可AOT编译，纯CPU可流畅运行
+* 内置正则超时熔断保护，可防ReDos攻击
 * 1.0.9及以前为 MIT 授权协议，1.0.10及以上为 Apache 2.0 与 MIT 双授权协议，可以商用闭源发布
 * 100%向下兼容jieba.NET的语法，仅需换nuget包即可完成迁移
 
@@ -162,16 +164,61 @@ AOT情形下含Emoji句子断句测试
   结果: 小明╱硕士╱毕业╱于╱中国╱科学╱学院╱科学院╱中国科学院╱计算╱计算所╱，╱后╱在╱日本╱京都╱大学╱日本京都大学╱深造
   通过 ✓
 [测试] 词性标注...
-  结果: 我/r╱爱/v╱北京/ns╱天安门/ns
+  基础结果: 我/r╱爱/v╱北京/ns╱天安门/ns
+  扩展区汉字+Emoji: 从/p╱𧒽岗/nz╱出发/v╱去/v╱吃/v╱𰻝𰻝面/nz╱，/x╱今天/t╱😀/x╱很/zg╱开心/v╱😊/x
+  扩展区汉字词性nz: ✓
+  Emoji词性x: ✓
   通过 ✓
 [测试] TF-IDF关键词提取...
   结果: 欧亚╱增资╱置业╱4.3╱2.2
+  基础测试通过 ✓
+  [扩展区汉字+Emoji+ZWJ+变体选择符混合测试]
+    输入: 从𧒽岗出发去吃𰻝𰻝面，经过石𬒔，今天😀很开心😊笑死了🤣，这是👨‍👩‍👧‍👦全家福和👨‍👨‍👧家庭，我爱❤️和▶︎视频，𰻝𰻝面是陕西特色面食
+    结果: 𰻝𰻝面╱𧒽岗╱石𬒔╱😀╱😊╱🤣╱👨‍👩‍👧‍👦╱全家福╱👨‍👨‍👧╱❤️╱▶︎╱面食╱开心╱视频╱特色
+    扩展区汉字: ✓
+    基础Emoji: ✓
+    ZWJ序列: ✓
+    变体选择符: ✓
   通过 ✓
 [测试] TextRank关键词提取...
   结果: 置业╱欧亚╱有限公司╱增资╱子公司
+  基础测试通过 ✓
+  [扩展区汉字+Emoji+ZWJ+变体选择符混合测试]
+    输入: 从𧒽岗出发去吃𰻝𰻝面，经过石𬒔，今天😀很开心😊笑死了🤣，这是👨‍👩‍👧‍👦全家福和👨‍👨‍👧家庭，我爱❤️和▶︎视频，𰻝𰻝面是陕西特色面食
+    结果: 𰻝𰻝面╱陕西╱全家福╱家庭╱特色╱面食╱𧒽岗╱出发╱视频╱石𬒔
+    扩展区汉字: ✓
+    基础Emoji: ✓（TextRank按词性过滤，emoji词性为x不在默认列表中）
+    ZWJ序列: ✓（同上）
+    变体选择符: ✓（同上）
   通过 ✓
 [测试] 分词Tokenize...
-  结果: 南京市[0,3], 长江大桥[3,7]
+  原文: 南京市长江大桥
+  基础结果: 南京市[0,3], 长江大桥[3,7]
+  原文: 𧒽岗𰻝𰻝面😀👨‍👩‍👧‍👦❤️▶︎开心
+  扩展区汉字+Emoji默认模式:
+    word 𧒽岗 start: 0 end: 2
+    word 𰻝𰻝面 start: 2 end: 5
+    word 😀 start: 5 end: 6
+    word 👨‍👩‍👧‍👦 start: 6 end: 7
+    word ❤️ start: 7 end: 8
+    word ▶︎ start: 8 end: 9
+    word 开心 start: 9 end: 11
+  扩展区汉字位置: ✓
+  基础Emoji位置: ✓
+  ZWJ序列Emoji: ✓
+  变体选择符Emoji: ✓
+  扩展区汉字+Emoji搜索模式:
+    word 𧒽岗 start: 0 end: 2
+    word 𰻝𰻝面 start: 2 end: 5
+    word 😀 start: 5 end: 6
+    word 👨 start: 6 end: 6
+    word 👩 start: 6 end: 6
+    word 👧 start: 6 end: 6
+    word 👦 start: 6 end: 7
+    word 👨‍👩‍👧‍👦 start: 6 end: 7
+    word ❤️ start: 7 end: 8
+    word ▶︎ start: 8 end: 9
+    word 开心 start: 9 end: 11
   通过 ✓
 [测试] Emoji分词...
   输入: 今天天气真好😀明天去爬山🎉
@@ -198,10 +245,63 @@ AOT情形下含Emoji句子断句测试
     算法: 3
     计算: 3
     。: 3
+  基础测试通过 ✓
+  [Counter<string> 默认模式（过滤emoji）]
+    输入: 从𧒽岗出发去吃𰻝𰻝面，经过石𬒔，今天😀很开心😊笑死了🤣，这是👨‍👩‍👧‍👦全家福和👨‍👨‍👧家庭，我爱❤️和▶︎视频，𰻝𰻝面是陕西特色面食
+    词频结果:
+      ，: 5
+      𰻝𰻝面: 2
+      和: 2
+      从: 1
+      𧒽岗: 1
+      出发: 1
+      去: 1
+      吃: 1
+      经过: 1
+      石𬒔: 1
+      今天: 1
+      很: 1
+      开心: 1
+      笑: 1
+      死: 1
+      了: 1
+      这是: 1
+    扩展区汉字: ✓
+    Emoji已过滤: ✓
+  [Counter<string> CountEmoji模式（保留emoji）]
+    词频结果:
+      ，: 5
+      𰻝𰻝面: 2
+      和: 2
+      从: 1
+      𧒽岗: 1
+      出发: 1
+      去: 1
+      吃: 1
+      经过: 1
+      石𬒔: 1
+      今天: 1
+      😀: 1
+      很: 1
+      开心: 1
+      😊: 1
+      笑: 1
+      死: 1
+    基础Emoji: ✓
+    ZWJ序列: ✓
+    变体选择符: ✓
   通过 ✓
 [测试] KeywordProcessor关键词提取...
   输入: 你需要通过cet-4考试，学习c语言、.NET core、网络 编程、JavaScript，掌握字典 tree的用法
   提取结果: CET-4, C语言, .NET Core, 网络 编程, 字典 tree
+  基础测试通过 ✓
+  [扩展区汉字+Emoji+ZWJ+变体选择符混合测试]
+    输入: 从𧒽岗出发去吃𰻝𰻝面，经过石𬒔，今天😀很开心😊笑死了🤣，这是👨‍👩‍👧‍👦全家福和👨‍👨‍👧家庭，我爱❤️和▶︎视频，𰻝𰻝面是陕西特色面食
+    结果: 𧒽岗, 𰻝𰻝面, 石𬒔, 😀, 😊, 🤣, 👨‍👩‍👧‍👦, 👨‍👨‍👧, ❤️, ▶︎, 𰻝𰻝面
+    扩展区汉字: ✓
+    基础Emoji: ✓
+    ZWJ序列: ✓
+    变体选择符: ✓
   通过 ✓
 [测试] 日期时间比值版本号分词...
   测试1: 今天4:50某某某领了一只记号笔
@@ -393,26 +493,29 @@ AOT情形下含Emoji句子断句测试
 
 * `JiebaNet.Segmenter.PosSeg.PosSegmenter`类可以在分词的同时，为每个词添加词性标注。
 * 词性标注采用和ictclas兼容的标记法，关于ictclas和jieba中使用的标记法列表，请参考：[词性标记](https://gist.github.com/luw2007/6016931)。
+* 词性标注支持扩展区汉字（GB18030-2022）和Emoji，扩展区汉字标注为`nz`（其他专名），Emoji标注为`x`（非语素字）。
 
 ```c#
 var posSeg = new PosSegmenter();
-var s = "一团硕大无朋的高能离子云，在遥远而神秘的太空中迅疾地飘移";
+var s = "从𧒽岗出发去吃𰻝𰻝面，今天😀很开心😊";
 
 var tokens = posSeg.Cut(s);
 Console.WriteLine(string.Join(" ", tokens.Select(token => string.Format("{0}/{1}", token.Word, token.Flag))));
 ```
 
 ```
-一团/m 硕大无朋/i 的/uj 高能/n 离子/n 云/ns ，/x 在/p 遥远/a 而/c 神秘/a 的/uj 太空/n 中/f 迅疾/z 地/uv 飘移/v
+从/p 𧒽岗/nz 出发/v 去/v 吃/v 𰻝𰻝面/nz ，/x 今天/t 😀/x 很/zg 开心/v 😊/x
 ```
 
 ### 5. Tokenize：返回词语在原文的起止位置
 
-* 默认模式
+起止位置基于字形簇（Grapheme Cluster）计算，而非char偏移，因此扩展区汉字和Emoji的位置与用户感知一致。
+
+* 默认模式：保留ZWJ序列Emoji、变体选择符Emoji的整体性，不拆分
 
 ```c#
 var segmenter = new JiebaSegmenter();
-var s = "永和服装饰品有限公司";
+var s = "𧒽岗𰻝𰻝面😀👨‍👩‍👧‍👦❤️▶︎开心";
 var tokens = segmenter.Tokenize(s);
 foreach (var token in tokens)
 {
@@ -421,17 +524,20 @@ foreach (var token in tokens)
 ```
 
 ```
-word 永和           start: 0   end: 2
-word 服装           start: 2   end: 4
-word 饰品           start: 4   end: 6
-word 有限公司         start: 6   end: 10
+word 𧒽岗          start: 0   end: 2
+word 𰻝𰻝面        start: 2   end: 5
+word 😀           start: 5   end: 6
+word 👨‍👩‍👧‍👦          start: 6   end: 7
+word ❤️           start: 7   end: 8
+word ▶︎           start: 8   end: 9
+word 开心           start: 9   end: 11
 ```
 
-* 搜索模式
+* 搜索模式：对长词提取子词以提高召回率，ZWJ序列Emoji会被拆出子Emoji（有意设计，与中文长词拆子词逻辑一致）
 
 ```c#
 var segmenter = new JiebaSegmenter();
-var s = "永和服装饰品有限公司";
+var s = "𧒽岗𰻝𰻝面😀👨‍👩‍👧‍👦❤️▶︎开心";
 var tokens = segmenter.Tokenize(s, TokenizerMode.Search);
 foreach (var token in tokens)
 {
@@ -440,12 +546,17 @@ foreach (var token in tokens)
 ```
 
 ```
-word 永和           start: 0   end: 2
-word 服装           start: 2   end: 4
-word 饰品           start: 4   end: 6
-word 有限           start: 6   end: 8
-word 公司           start: 8   end: 10
-word 有限公司         start: 6   end: 10
+word 𧒽岗          start: 0   end: 2
+word 𰻝𰻝面        start: 2   end: 5
+word 😀           start: 5   end: 6
+word 👨            start: 6   end: 6
+word 👩            start: 6   end: 6
+word 👧            start: 6   end: 6
+word 👦            start: 6   end: 7
+word 👨‍👩‍👧‍👦          start: 6   end: 7
+word ❤️           start: 7   end: 8
+word ▶︎           start: 8   end: 9
+word 开心           start: 9   end: 11
 ```
 
 ### 6. 并行分词
@@ -493,26 +604,69 @@ $ jiebanet -p -f input.txt > output.txt
 
 ### 11. 词频统计
 
-可以使用`Counter`类统计词频，其实现来自Python标准库的Counter类（具体接口和实现细节略有不同），用法大致是：
+可以使用`Counter`类统计词频，其实现来自Python标准库的Counter类（具体接口和实现细节略有不同）。
+
+`Counter<string>`支持两种emoji处理模式，适合不同类型的词云图制作：
+
+- **默认模式**（`countEmoji: false`，默认值）：过滤emoji词频，仅统计文字词，适合制作纯文字词云图
+- **Emoji提取模式**（`countEmoji: true`）：保留emoji词频，适合制作含emoji的词云图
+
+Emoji过滤基于`GraphemeClusterHelper.IsEmojiGrapheme()`检测，可正确识别ZWJ序列、变体选择符、肤色修饰符等复杂emoji。
 
 ```c#
-var s = "在数学和计算机科学之中，算法（algorithm）为任何良定义的具体计算步骤的一个序列，常用于计算、数据处理和自动推理。精确而言，算法是一个表示为有限长列表的有效方法。算法应包含清晰定义的指令用于计算函数。";
 var seg = new JiebaSegmenter();
+var s = "从𧒽岗出发去吃𰻝𰻝面，经过石𬒔，今天😀很开心😊笑死了🤣";
+
+// 默认模式：过滤emoji，仅统计文字词
 var freqs = new Counter<string>(seg.Cut(s));
-foreach (var pair in freqs.MostCommon(5))
+foreach (var pair in freqs.MostCommon(10))
+{
+    Console.WriteLine($"{pair.Key}: {pair.Value}");
+}
+
+// Emoji提取模式：保留emoji词频
+var emojiFreqs = new Counter<string>(seg.Cut(s), countEmoji: true);
+foreach (var pair in emojiFreqs.MostCommon(17))
 {
     Console.WriteLine($"{pair.Key}: {pair.Value}");
 }
 ```
 
-输出：
+默认模式输出：
 
 ```bash
-的: 4
-，: 3
-算法: 3
-计算: 3
-。: 3
+，: 2
+从: 1
+𧒽岗: 1
+出发: 1
+去: 1
+吃: 1
+𰻝𰻝面: 1
+经过: 1
+石𬒔: 1
+今天: 1
+```
+
+Emoji提取模式输出：
+
+```bash
+，: 2
+从: 1
+𧒽岗: 1
+出发: 1
+去: 1
+吃: 1
+𰻝𰻝面: 1
+经过: 1
+石𬒔: 1
+今天: 1
+😀: 1
+很: 1
+开心: 1
+😊: 1
+笑: 1
+死: 1
+了: 1
 ```
 
 `Counter`类可通过`Add`，`Subtract`和`Union`方法进行修改，最后以`MostCommon`方法获得频率最高的若干词。具体用法可见测试用例。
@@ -527,19 +681,19 @@ jieba分词当前的实现里，不能处理忽略大小写、含空格的词之
 
 ```c#
 var kp = new KeywordProcessor();
-kp.AddKeywords(new []{".NET Core", "Java", "C语言", "字典 tree", "CET-4", "网络 编程"});
+kp.AddKeywords(new []{"𰻝𰻝面", "𧒽岗", "石𬒔", ".NET Core", "C语言", "字典 tree", "CET-4", "网络 编程"});
 
-var keywords = kp.ExtractKeywords("你需要通过cet-4考试，学习c语言、.NET core、网络 编程、JavaScript，掌握字典 tree的用法");
+var keywords = kp.ExtractKeywords("你需要通过cet-4考试，去𧒽岗吃𰻝𰻝面，学习c语言、.NET core、网络 编程、JavaScript，掌握字典 tree的用法，经过石𬒔");
 
 // keywords 值为：
-// new List<string> { "CET-4", "C语言", ".NET Core", "网络 编程", "字典 tree"}
+// new List<string> { "CET-4", "𧒽岗", "𰻝𰻝面", "C语言", ".NET Core", "网络 编程", "字典 tree", "石𬒔"}
 
 // 可以看到，结果中的词与开始添加的关键词相同，与输入句子中的词则不尽相同。如果需要返回句中找到的原词，可以使用 `raw` 参数。
 
-var keywords = kp.ExtractKeywords("你需要通过cet-4考试，学习c语言、.NET core、网络 编程、JavaScript，掌握字典 tree的用法", raw: true);
+var keywords = kp.ExtractKeywords("你需要通过cet-4考试，去𧒽岗吃𰻝𰻝面，学习c语言、.NET core、网络 编程、JavaScript，掌握字典 tree的用法，经过石𬒔", raw: true);
 
 // keywords 值为：
-// new List<string> { "cet-4", "c语言", ".NET core", "网络 编程", "字典 tree"}
+// new List<string> { "cet-4", "𧒽岗", "𰻝𰻝面", "c语言", ".NET core", "网络 编程", "字典 tree", "石𬒔"}
 ```
 
 ### 13. 实体提取
