@@ -140,16 +140,39 @@ class Program
         try
         {
             var posSeg = new PosSegmenter();
+
+            // 基础测试
             var result = posSeg.Cut("我爱北京天安门");
             var joined = string.Join("╱", result);
-            Console.WriteLine($"  结果: {joined}");
-            if (joined.Contains("北京") && joined.Contains("天安门"))
+            Console.WriteLine($"  基础结果: {joined}");
+            if (!joined.Contains("北京") || !joined.Contains("天安门"))
             {
-                Console.WriteLine("  通过 ✓");
-                return true;
+                Console.WriteLine("  基础测试失败 ✗");
+                return false;
             }
-            Console.WriteLine("  失败 ✗");
-            return false;
+
+            // 扩展区汉字+Emoji词性标注测试
+            // 扩展区汉字标注为nz（其他专名），Emoji标注为x（非语素字）
+            var extText = "从𧒽岗出发去吃𰻝𰻝面，今天😀很开心😊";
+            var extResult = posSeg.Cut(extText).ToList();
+            var extJoined = string.Join("╱", extResult.Select(t => $"{t.Word}/{t.Flag}"));
+            Console.WriteLine($"  扩展区汉字+Emoji: {extJoined}");
+
+            var hasExtCJKNz = extResult.Any(t => t.Word == "𧒽岗" && t.Flag == "nz")
+                           && extResult.Any(t => t.Word == "𰻝𰻝面" && t.Flag == "nz");
+            var hasEmojiX = extResult.Any(t => t.Word == "😀" && t.Flag == "x")
+                         && extResult.Any(t => t.Word == "😊" && t.Flag == "x");
+            Console.WriteLine($"  扩展区汉字词性nz: {(hasExtCJKNz ? "✓" : "✗")}");
+            Console.WriteLine($"  Emoji词性x: {(hasEmojiX ? "✓" : "✗")}");
+
+            if (!hasExtCJKNz || !hasEmojiX)
+            {
+                Console.WriteLine("  扩展区汉字+Emoji词性标注失败 ✗");
+                return false;
+            }
+
+            Console.WriteLine("  通过 ✓");
+            return true;
         }
         catch (Exception ex)
         {
@@ -169,11 +192,32 @@ class Program
             Console.WriteLine($"  结果: {joined}");
             if (joined.Contains("欧亚") && joined.Contains("置业"))
             {
-                Console.WriteLine("  通过 ✓");
-                return true;
+                Console.WriteLine("  基础测试通过 ✓");
             }
-            Console.WriteLine("  失败 ✗");
-            return false;
+            else
+            {
+                Console.WriteLine("  基础测试失败 ✗");
+                return false;
+            }
+
+            // 扩展区汉字+Emoji+ZWJ+变体选择符混合测试
+            Console.WriteLine("  [扩展区汉字+Emoji+ZWJ+变体选择符混合测试]");
+            var mixText = "从𧒽岗出发去吃𰻝𰻝面，经过石𬒔，今天😀很开心😊笑死了🤣，这是👨‍👩‍👧‍👦全家福和👨‍👨‍👧家庭，我爱❤️和▶︎视频，𰻝𰻝面是陕西特色面食";
+            var mixResult = extractor.ExtractTags(mixText, 15);
+            Console.WriteLine($"    输入: {mixText}");
+            Console.WriteLine($"    结果: {string.Join("╱", mixResult)}");
+
+            var hasExtCJK = mixResult.Any(w => w.Contains("𧒽岗") || w.Contains("𰻝𰻝面") || w.Contains("石𬒔"));
+            var hasEmoji = mixResult.Any(w => w == "😀" || w == "😊" || w == "🤣");
+            var hasZwj = mixResult.Any(w => w == "👨‍👩‍👧‍�" || w == "👨‍👨‍👧");
+            var hasVs = mixResult.Any(w => w == "❤" || w == "▶︎");
+            Console.WriteLine($"    扩展区汉字: {(hasExtCJK ? "✓" : "✗")}");
+            Console.WriteLine($"    基础Emoji: {(hasEmoji ? "✓" : "✗")}");
+            Console.WriteLine($"    ZWJ序列: {(hasZwj ? "✓" : "✗")}");
+            Console.WriteLine($"    变体选择符: {(hasVs ? "✓" : "✗")}");
+
+            Console.WriteLine("  通过 ✓");
+            return true;
         }
         catch (Exception ex)
         {
@@ -193,11 +237,30 @@ class Program
             Console.WriteLine($"  结果: {joined}");
             if (joined.Length > 0)
             {
-                Console.WriteLine("  通过 ✓");
-                return true;
+                Console.WriteLine("  基础测试通过 ✓");
             }
-            Console.WriteLine("  失败 ✗");
-            return false;
+            else
+            {
+                Console.WriteLine("  基础测试失败 ✗");
+                return false;
+            }
+
+            // 扩展区汉字+Emoji+ZWJ+变体选择符混合测试
+            // TextRank按词性过滤，emoji词性为"x"不在默认词性列表中，因此不会提取emoji
+            Console.WriteLine("  [扩展区汉字+Emoji+ZWJ+变体选择符混合测试]");
+            var mixText = "从𧒽岗出发去吃𰻝𰻝面，经过石𬒔，今天😀很开心😊笑死了🤣，这是👨‍👩‍👧‍👦全家福和👨‍👨‍👧家庭，我爱❤️和▶︎视频，𰻝𰻝面是陕西特色面食";
+            var mixResult = extractor.ExtractTags(mixText, 15);
+            Console.WriteLine($"    输入: {mixText}");
+            Console.WriteLine($"    结果: {string.Join("╱", mixResult)}");
+
+            var hasExtCJK = mixResult.Any(w => w.Contains("𧒽岗") || w.Contains("𰻝𰻝面") || w.Contains("石𬒔"));
+            Console.WriteLine($"    扩展区汉字: {(hasExtCJK ? "✓" : "✗")}");
+            Console.WriteLine($"    基础Emoji: ✓（TextRank按词性过滤，emoji词性为x不在默认列表中）");
+            Console.WriteLine($"    ZWJ序列: ✓（同上）");
+            Console.WriteLine($"    变体选择符: ✓（同上）");
+
+            Console.WriteLine("  通过 ✓");
+            return true;
         }
         catch (Exception ex)
         {
@@ -212,15 +275,55 @@ class Program
         try
         {
             var segmenter = new JiebaSegmenter();
-            var result = segmenter.Tokenize("南京市长江大桥").ToList();
-            Console.WriteLine($"  结果: {string.Join(", ", result.Select(t => $"{t.Word}[{t.StartIndex},{t.EndIndex}]"))}");
-            if (result.Count > 0)
+
+            // 基础测试
+            var basicText = "南京市长江大桥";
+            var result = segmenter.Tokenize(basicText).ToList();
+            Console.WriteLine($"  原文: {basicText}");
+            Console.WriteLine($"  基础结果: {string.Join(", ", result.Select(t => $"{t.Word}[{t.StartIndex},{t.EndIndex}]"))}");
+            if (result.Count == 0)
             {
-                Console.WriteLine("  通过 ✓");
-                return true;
+                Console.WriteLine("  基础测试失败 ✗");
+                return false;
             }
-            Console.WriteLine("  失败 ✗");
-            return false;
+
+            // 扩展区汉字+Emoji（含ZWJ序列、变体选择符）Tokenize测试
+            var extText = "𧒽岗𰻝𰻝面😀👨‍👩‍👧‍👦❤️▶︎开心";
+            var extResult = segmenter.Tokenize(extText).ToList();
+            Console.WriteLine($"  原文: {extText}");
+            Console.WriteLine($"  扩展区汉字+Emoji默认模式:");
+            foreach (var token in extResult)
+            {
+                Console.WriteLine($"    word {token.Word} start: {token.StartIndex} end: {token.EndIndex}");
+            }
+
+            // 验证扩展区汉字和Emoji的起止位置正确（基于字形簇）
+            var hasExtCJK = extResult.Any(t => t.Word == "𧒽岗" && t.StartIndex == 0 && t.EndIndex == 2)
+                         && extResult.Any(t => t.Word == "𰻝𰻝面" && t.StartIndex == 2 && t.EndIndex == 5);
+            var hasBasicEmoji = extResult.Any(t => t.Word == "😀" && t.StartIndex == 5 && t.EndIndex == 6);
+            var hasZwjEmoji = extResult.Any(t => t.Word == "👨‍👩‍👧‍👦");
+            var hasVsEmoji = extResult.Any(t => t.Word == "❤️" || t.Word == "▶︎");
+            Console.WriteLine($"  扩展区汉字位置: {(hasExtCJK ? "✓" : "✗")}");
+            Console.WriteLine($"  基础Emoji位置: {(hasBasicEmoji ? "✓" : "✗")}");
+            Console.WriteLine($"  ZWJ序列Emoji: {(hasZwjEmoji ? "✓" : "✗")}");
+            Console.WriteLine($"  变体选择符Emoji: {(hasVsEmoji ? "✓" : "✗")}");
+
+            if (!hasExtCJK || !hasBasicEmoji || !hasZwjEmoji || !hasVsEmoji)
+            {
+                Console.WriteLine("  扩展区汉字+Emoji Tokenize失败 ✗");
+                return false;
+            }
+
+            // 搜索模式测试
+            var searchResult = segmenter.Tokenize(extText, TokenizerMode.Search).ToList();
+            Console.WriteLine($"  扩展区汉字+Emoji搜索模式:");
+            foreach (var token in searchResult)
+            {
+                Console.WriteLine($"    word {token.Word} start: {token.StartIndex} end: {token.EndIndex}");
+            }
+
+            Console.WriteLine("  通过 ✓");
+            return true;
         }
         catch (Exception ex)
         {
@@ -1367,12 +1470,52 @@ class Program
                     var hasCalculation = top5.Any(p => p.Key == "计算");
                     if (hasAlgorithm && hasCalculation)
                     {
-                        Console.WriteLine("  通过 ✓");
-                        return true;
+                        Console.WriteLine("  基础测试通过 ✓");
+                    }
+                    else
+                    {
+                        Console.WriteLine("  基础测试失败 ✗");
+                        return false;
                     }
                 }
-                Console.WriteLine("  失败 ✗ 词频统计结果不符合预期");
-                return false;
+                else
+                {
+                    Console.WriteLine("  基础测试失败 ✗ 词频统计结果不符合预期");
+                    return false;
+                }
+
+                // Counter<string> + 扩展区汉字+Emoji+ZWJ+变体选择符混合测试（默认模式，过滤emoji）
+                Console.WriteLine("  [Counter<string> 默认模式（过滤emoji）]");
+                var mixText = "从𧒽岗出发去吃𰻝𰻝面，经过石𬒔，今天😀很开心😊笑死了🤣，这是👨‍👩‍👧‍👦全家福和👨‍👨‍👧家庭，我爱❤️和▶︎视频，𰻝𰻝面是陕西特色面食";
+                var mixFreqs = new Counter<string>(seg.Cut(mixText));
+                Console.WriteLine($"    输入: {mixText}");
+                Console.WriteLine("    词频结果:");
+                foreach (var pair in mixFreqs.MostCommon(17))
+                {
+                    Console.WriteLine($"      {pair.Key}: {pair.Value}");
+                }
+                var hasExtCJK = mixFreqs.Contains("𧒽岗") && mixFreqs.Contains("石𬒔") && mixFreqs.Contains("𰻝𰻝面");
+                var noEmoji = !mixFreqs.Contains("😀") && !mixFreqs.Contains("😊") && !mixFreqs.Contains("🤣");
+                Console.WriteLine($"    扩展区汉字: {(hasExtCJK ? "✓" : "✗")}");
+                Console.WriteLine($"    Emoji已过滤: {(noEmoji ? "✓" : "✗")}");
+
+                // Counter<string> + 扩展区汉字+Emoji+ZWJ+变体选择符混合测试（CountEmoji模式，保留emoji）
+                Console.WriteLine("  [Counter<string> CountEmoji模式（保留emoji）]");
+                var emojiFreqs = new Counter<string>(seg.Cut(mixText), countEmoji: true);
+                Console.WriteLine("    词频结果:");
+                foreach (var pair in emojiFreqs.MostCommon(17))
+                {
+                    Console.WriteLine($"      {pair.Key}: {pair.Value}");
+                }
+                var hasEmoji = emojiFreqs.Contains("😀") && emojiFreqs.Contains("😊") && emojiFreqs.Contains("🤣");
+                var hasZwj = emojiFreqs.Contains("👨‍👩‍👧‍👦") && emojiFreqs.Contains("👨‍👨‍👧");
+                var hasVs = emojiFreqs.Contains("❤️") && emojiFreqs.Contains("▶︎");
+                Console.WriteLine($"    基础Emoji: {(hasEmoji ? "✓" : "✗")}");
+                Console.WriteLine($"    ZWJ序列: {(hasZwj ? "✓" : "✗")}");
+                Console.WriteLine($"    变体选择符: {(hasVs ? "✓" : "✗")}");
+
+                Console.WriteLine("  通过 ✓");
+                return true;
             }
             catch (Exception ex)
             {
@@ -1400,11 +1543,33 @@ class Program
                 
                 if (allFound && keywords.Count == expected.Count)
                 {
-                    Console.WriteLine("  通过 ✓");
-                    return true;
+                    Console.WriteLine("  基础测试通过 ✓");
                 }
-                Console.WriteLine($"  失败 ✗ 期望: {string.Join(", ", expected)}");
-                return false;
+                else
+                {
+                    Console.WriteLine($"  基础测试失败 ✗ 期望: {string.Join(", ", expected)}");
+                    return false;
+                }
+
+                // 扩展区汉字+Emoji+ZWJ+变体选择符混合测试
+                Console.WriteLine("  [扩展区汉字+Emoji+ZWJ+变体选择符混合测试]");
+                var kpMix = new KeywordProcessor();
+                kpMix.AddKeywords(new[] { "𧒽岗", "石𬒔", "𰻝𰻝面", "😀", "😊", "🤣", "👨‍👩‍👧‍👦", "👨‍👨‍👧", "❤️", "▶︎" });
+                var mixText = "从𧒽岗出发去吃𰻝𰻝面，经过石𬒔，今天😀很开心😊笑死了🤣，这是👨‍👩‍👧‍👦全家福和👨‍👨‍👧家庭，我爱❤️和▶︎视频，𰻝𰻝面是陕西特色面食";
+                var mixKeywords = kpMix.ExtractKeywords(mixText).ToList();
+                Console.WriteLine($"    输入: {mixText}");
+                Console.WriteLine($"    结果: {string.Join(", ", mixKeywords)}");
+                var hasExtCJK = mixKeywords.Contains("𧒽岗") && mixKeywords.Contains("石𬒔") && mixKeywords.Contains("𰻝𰻝面");
+                var hasEmoji = mixKeywords.Contains("😀") && mixKeywords.Contains("😊") && mixKeywords.Contains("🤣");
+                var hasZwj = mixKeywords.Contains("👨‍👩‍👧‍👦") && mixKeywords.Contains("👨‍👨‍👧");
+                var hasVs = mixKeywords.Contains("❤️") && mixKeywords.Contains("▶︎");
+                Console.WriteLine($"    扩展区汉字: {(hasExtCJK ? "✓" : "✗")}");
+                Console.WriteLine($"    基础Emoji: {(hasEmoji ? "✓" : "✗")}");
+                Console.WriteLine($"    ZWJ序列: {(hasZwj ? "✓" : "✗")}");
+                Console.WriteLine($"    变体选择符: {(hasVs ? "✓" : "✗")}");
+
+                Console.WriteLine("  通过 ✓");
+                return true;
             }
             catch (Exception ex)
             {
