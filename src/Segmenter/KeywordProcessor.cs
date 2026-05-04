@@ -141,6 +141,14 @@ namespace JiebaNet.Segmenter
                             keywordsExtracted.Add(new TextSpan(text: longestFound, start: seqStartPos, end: idx));
                         }
 
+                        // 当通过更长相配找到关键词时，回退idx以避免跳过seqEndPos位置的字符
+                        // seqEndPos位置的字符可能是下一个关键词的起始（如emoji的高代理）
+                        // 循环末尾的idx += 1会使idx跳过该字符
+                        if (isLongerFound)
+                        {
+                            idx = seqEndPos - 1;
+                        }
+
                         currentState = KeywordTrie;
                         resetCurrentDict = true;
                     }

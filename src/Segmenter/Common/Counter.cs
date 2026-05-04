@@ -1,6 +1,7 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace JiebaNet.Segmenter.Common
 {
@@ -53,14 +54,37 @@ namespace JiebaNet.Segmenter.Common
         bool Contains(T key);
     }
 
+    /// <summary>
+    /// 通用计数器，统计集合中各元素的出现次数
+    /// </summary>
+    /// <typeparam name="T">元素类型</typeparam>
+    /// <remarks>
+    /// 对于词级统计，使用 Counter&lt;string&gt; 配合分词器即可正确处理所有文本：
+    /// - 默认模式：new Counter&lt;string&gt;(seg.Cut(s))，过滤emoji词频（countEmoji默认为false）
+    /// - Emoji提取模式：new Counter&lt;string&gt;(seg.Cut(s), countEmoji: true)，保留emoji词频
+    /// </remarks>
     public class Counter<T>: ICounter<T>
     {
         private Dictionary<T, int> data = new Dictionary<T, int>();
 
+        /// <summary>
+        /// 是否统计emoji词频
+        /// 默认为false，过滤掉emoji词（使用GraphemeClusterHelper检测）
+        /// 设为true时保留emoji词频
+        /// 仅对Counter&lt;string&gt;有效，其他类型无影响
+        /// </summary>
+        private readonly bool _countEmoji;
+
         public Counter() {}
 
-        public Counter(IEnumerable<T> items)
+        /// <summary>
+        /// 构造函数，默认过滤emoji词频（countEmoji为false）
+        /// </summary>
+        /// <param name="items">待统计的元素集合</param>
+        /// <param name="countEmoji">是否统计emoji词频，默认false（过滤emoji）</param>
+        public Counter(IEnumerable<T> items, bool countEmoji = false)
         {
+            _countEmoji = countEmoji;
             CountItems(items);
         }
 
@@ -145,6 +169,12 @@ namespace JiebaNet.Segmenter.Common
         {
             foreach (var item in items)
             {
+                // Counter<string>且_countEmoji为false时，过滤emoji词
+                if (!_countEmoji && item is string s && GraphemeClusterHelper.IsEmojiGrapheme(s))
+                {
+                    continue;
+                }
+
                 data[item] = data.GetDefault(item, 0) + 1;
             }
         }
@@ -161,6 +191,12 @@ namespace JiebaNet.Segmenter.Common
         {
             foreach (var item in items)
             {
+                // Counter<string>且_countEmoji为false时，过滤emoji词
+                if (!_countEmoji && item is string s && GraphemeClusterHelper.IsEmojiGrapheme(s))
+                {
+                    continue;
+                }
+
                 data[item] = data.GetDefault(item, 0) - 1;
             }
         }

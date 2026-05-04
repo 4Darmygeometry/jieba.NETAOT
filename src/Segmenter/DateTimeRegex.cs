@@ -1,8 +1,9 @@
-// 所有框架都使用正则表达式识别日期时间
+﻿﻿// 所有框架都使用正则表达式识别日期时间
 
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using JiebaNet.Segmenter.Common;
 
 namespace JiebaNet.Segmenter
 {
@@ -103,7 +104,7 @@ namespace JiebaNet.Segmenter
             @"(?:^|(?<![\d\-/\.]))(?<year>\d{4})(?<sep>[-/\.])(?<month>\d{1,2})\k<sep>(?<day>\d{1,2})" +
             @"(?:\s+(?<hour>\d{1,2}):(?<minute>\d{2})(?::(?<second>\d{2}))?)?(?![\d\-/\.])" +
             @"|(?:^|(?<![\d\-/\.T]))\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?(?![\d\-/\.T])",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 2. 中文日期时间（统一匹配年份、年月、年月日、月日及日期时间组合） ==========
         // 匹配格式：
@@ -138,7 +139,7 @@ namespace JiebaNet.Segmenter
             @"(?:\s*(?<minute>\d{1,2}|[一二三四五六七八九十零]{1,3}|半|一刻|三刻|整)[分]?)?" +
             @"(?:\s*(?<second>\d{1,2}|[一二三四五六七八九十零]{1,3})秒)?)?" +
             @"(?![\d一二三四五六七八九十〇零])",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 3. 农历 ==========
         // 注意：农历日期后可跟时间段+时间（如"腊月二十八晚上9点"）
@@ -153,7 +154,7 @@ namespace JiebaNet.Segmenter
             @"(?<hour>\d{1,2}|[一二三四五六七八九十零]{1,3})[" + C_点 + C_时 + @"]" +
             @"(?:\s*(?<minute>\d{1,2}|[一二三四五六七八九十零]{1,3}|半|一刻|三刻|整)[分]?)?" +
             @"(?:\s*(?<second>\d{1,2}|[一二三四五六七八九十零]{1,3})秒)?)?",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 4. 节日 ==========
         // 注意：传统节日和现代节日统一用C_节后缀合并
@@ -162,7 +163,7 @@ namespace JiebaNet.Segmenter
         // 注意：使用单字C变量支持繁体（如重陽節、臘八節、婦女節等）
         private static readonly Regex FestivalRegex = new(
             @"(?:春|元宵|端午|中秋|重[" + C_阳 + @"]|[" + C_腊 + @"]八|情人|[" + C_妇 + @"]女|[" + C_劳 + @"][" + C_动 + @"]|[" + C_儿 + @"]童|教[" + C_师 + @"]|[" + C_国 + @"][" + C_庆 + @"]|[" + C_圣 + @"][" + C_诞 + @"]|感恩|母[" + C_亲 + @"]|父[" + C_亲 + @"])[" + C_节 + @"]|清明[" + C_节 + @"]|(?:七夕|小年|除夕|元旦)(?:[" + C_节 + @"])?",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 5. 节气 ==========
         // 注意：清明是节气，清明节是节日（在FestivalRegex中）
@@ -170,7 +171,7 @@ namespace JiebaNet.Segmenter
             @"立春|雨水|" + C_惊蛰 + @"|春分|清明|[" + C_谷 + @"]雨|" +
             @"立夏|小[" + C_满 + @"]|芒[" + C_种 + @"]|夏至|小暑|大暑|" +
             @"立秋|[" + C_处 + @"]暑|白露|秋分|寒露|霜降|立冬|小雪|大雪|冬至|小寒|大寒",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 6. 时间（严格格式：HH:MM:SS.ffff、HH:MM:SS、HH:MM，时分秒60进制） ==========
         // 格式1：HH:MM:SS.ffff（如 14:30:00.123）
@@ -206,7 +207,7 @@ namespace JiebaNet.Segmenter
             @"(?<minute>\d{1,2}|[一二三四五六七八九十]{1,2}|[一二三四五]十[一二三四五六七八九]?)分" +
             @"(?<second>\d{1,2}|[一二三四五六七八九十]{1,2}|[一二三四五]十[一二三四五六七八九]?)秒" +
             @"(?![一二三四五六七八九十零分秒\d])",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 6.5 比值（任意数字:数字格式，支持小数） ==========
         // 格式：数字:数字 或 数字:数字:数字（如 100:31, 3:1, 1:1:1, 1:1.618）
@@ -216,7 +217,7 @@ namespace JiebaNet.Segmenter
             @"(?:^|(?<![\d.]))" +
             @"(?<num1>\d+(?:\.\d+)?):(?<num2>\d+(?:\.\d+)?)(?::(?<num3>\d+(?:\.\d+)?))?" +
             @"(?![\d.])",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 7. 相对时间（支持组合：明天下午3点、昨天上午9点、今天晚上8点、今天4:50、今晚8点半、明天下午等） ==========
         // 注意：星期模式中'周'必须后跟星期几数字，避免'周年'中的'周'被误匹配
@@ -238,7 +239,7 @@ namespace JiebaNet.Segmenter
             @"|\s*(?:上午|下午|早上|晚上|凌晨|[" + C_后 + @"]午|傍晚|黄昏)?\s*\d{1,2}:\d{2}(?::\d{2})?" +
             // 格式3：只有上下午/早晚（如"明天下午"、"今天上午"、"今晚"），不需要具体时间点
             @"|\s*(?:上午|下午|早上|晚上|凌晨|[" + C_后 + @"]午|傍晚|黄昏))?",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 8. 持续时间 ==========
         // 注意：'周'单位需要排除'周年'（纪念日），避免DurationRegex抢占AnniversaryRegex的匹配
@@ -246,7 +247,7 @@ namespace JiebaNet.Segmenter
         private static readonly Regex DurationRegex = new(
             @"(?:\d+(?:\.\d+)?|[一二三四五六七八九十百千]+)\s*" +
             @"(?:年(?!第?[一二三四1234][" + C_季 + C_节 + @"]度|Q[1234])|[" + C_个 + @"]个月|月|[" + C_周 + @"](?!年)|天|日|[" + C_个 + @"]?小[" + C_时 + @"]|分[" + C_钟 + @"]|秒[" + C_钟 + @"]|毫秒|[" + C_个 + @"]?工作日)",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 9. 模糊时间 ==========
         private static readonly Regex FuzzyRegex = new(
@@ -254,7 +255,7 @@ namespace JiebaNet.Segmenter
             @"工作日|[" + C_周 + @"]末|[" + C_双 + @"]休日|[" + C_礼 + @"]拜天|[" + C_周 + @"][" + C_内 + @"]" +
             @"|非[" + C_周 + @"]末|[" + C_节 + @"]假日|平[" + C_时 + @"]|平日|非[" + C_节 + @"]假日|" +
             @"大清早|一大早|大早|上午[" + C_时 + @"]分|中午[" + C_时 + @"]分|午[" + C_后 + @"][" + C_时 + @"]分|下午[" + C_时 + @"]分|傍晚[" + C_时 + @"]分|晚上[" + C_时 + @"]分|深夜[" + C_时 + @"]分|半夜三更",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 10. 时间范围 ==========
         private static readonly Regex RangeRegex = new(
@@ -262,21 +263,21 @@ namespace JiebaNet.Segmenter
             @"(?<start>\d{1,2}:\d{2}(?::\d{2})?|\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[日号號]?|今天|明天|昨天|[上下]午\d{1,2}[" + C_点 + C_时 + @"])" +
             @"\s*(?:到|至|~|-|—|→|直到)\s*" +
             @"(?<end>\d{1,2}:\d{2}(?::\d{2})?|\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[日号號]?|今天|明天|昨天|[上下]午\d{1,2}[" + C_点 + C_时 + @"])",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 11. 干支+生肖 ==========
         // 注意：生肖必须跟"时"或"年"，避免单独的"猴"等被误识别
         private static readonly Regex TraditionalRegex = new(
             @"[甲乙丙丁戊己庚辛壬癸][子丑寅卯辰巳午未申酉戌亥][" + C_时 + @"]?|" +
             @"[鼠牛虎兔" + C_龙 + "蛇" + C_马 + "羊猴" + C_鸡 + "狗" + C_猪 + "](?:[" + C_时 + @"]|年)|属[鼠牛虎兔" + C_龙 + "蛇" + C_马 + "羊猴" + C_鸡 + "狗" + C_猪 + @"]",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 12. 截止时间 ==========
         private static readonly Regex DeadlineRegex = new(
             @"(?:截止|截至|Deadline|DDL|deadline|最后期限|期限|到期|[" + C_过 + @"]期|失效)\s*(?:日期|[" + C_时 + @"][" + C_间 + @"])?\s*" +
             @"(?::|：|是|为|在|到|至)?\s*" +
             @"(?<date>\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[日号號]?|\d{1,2}[-/月]\d{1,2}[日号號]?|今天|明天|后天|下周[一二三四五六日天]?|[上下]个月\d{1,2}[日号號]?)",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 13. 季度 ==========
         // 注意：支持'季度'（季）和'节度'（节/節），'2024年第一季度'和'2024年Q1'应作为整体匹配
@@ -286,14 +287,14 @@ namespace JiebaNet.Segmenter
             @"Q(?<quarter>[1234])|" +
             @"第?(?<quarter>[一二三四1234])[" + C_季 + C_节 + @"]度|" +
             @"第[一二三四1234][" + C_财 + @"][" + C_季 + C_节 + @"]",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 14. 星期 ==========
         // 注意：英文星期名称需要添加单词边界，避免匹配到其他单词的一部分（如"GitHub"中的"tHu"被匹配为"Thu"）
         private static readonly Regex WeekdayRegex = new(
             @"(?:星期|[" + C_礼 + @"]拜|[" + C_周 + @"])(?<day>[一二三四五六日天1234567])|" +
             @"\b(?<day>Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            RegexOptions.Compiled | RegexOptions.IgnoreCase, RegexDefaults.MatchTimeout);
 
         // ========== 15. 时区 ==========
         // 注意：'北京时间'需完整匹配'北京+时间/時間'，避免被分词器拆成'北京时/间'
@@ -303,7 +304,7 @@ namespace JiebaNet.Segmenter
             @"UTC[+-]\d{1,2}(?::?\d{2})?|GMT[+-]?\d{1,2}?|CST|EST|PST|MST|JST|IST|CET|" +
             @"(?:北京|[" + C_东 + @"]京|[" + C_纽 + @"][" + C_约 + @"]|[" + C_伦 + @"]敦|巴黎|悉尼|莫斯科)[" + C_时 + @"][" + C_间 + @"]?|" +
             @"[" + C_东 + @"|西](?:[一二三四五六七八九十]{1,2}|\d{1,2})区",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 16. 纪念日 ==========
         // 匹配"数字+周年/岁/寿"等纪念日表达式
@@ -311,21 +312,21 @@ namespace JiebaNet.Segmenter
         private static readonly Regex AnniversaryRegex = new(
             @"(?<num>\d+|[一二三四五六七八九十百]+)\s*" +
             @"(?<unit>岁|周岁|虚岁|周年|年[" + C_纪 + @"]念|年[" + C_庆 + @"]|年[" + C_诞 + @"]辰|年忌辰|年祭|[" + C_华 + @"][" + C_诞 + @"]|[" + C_寿 + @"]辰|大[" + C_寿 + @"])",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 17. 朝代 ==========
         // 注意：所有朝代名称都需要后跟'朝'或'代'才识别，避免与普通词汇冲突
         // 例如：商鞅变法（商）、隋唐演义（隋、唐）、汉字（汉）等
         private static readonly Regex DynastyRegex = new(
             @"(?:夏|商|秦|[" + C_汉 + @"]|三[" + C_国 + @"]|晋|南北朝|隋|唐|五代|周|宋|元|明|清|民[" + C_国 + @"])(?:朝|代)",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 18. 百分比 ==========
         // 格式：数字% 或 数字.数字%（如 5%, 99.99%, 100.5%）
         // 注意：百分比优先级高于版本号，确保"99.99%"被识别为百分比而非版本号
         private static readonly Regex PercentageRegex = new(
             @"\d+(?:\.\d+)?%",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 19. 版本号 ==========
         // 格式：v1.0.1、1.0.1、3.2-preview1、4.1.2-rc1、2.1-alpha1、6.3-beta2、18.04 LTS、v20 LTS
@@ -355,7 +356,7 @@ namespace JiebaNet.Segmenter
             @"(?:alpha|beta|rc|release))版本" +
             @")" + V_Core + V_Prerelease + V_LTS +
             @"(?![\d.%])",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 20. 域名/URL ==========
         // 格式：https://gitee.com/JTsamsde/AOTba、http://www.baidu.com/search?q=test
@@ -373,7 +374,7 @@ namespace JiebaNet.Segmenter
         // 注意：使用GB18030_2022.ChineseStopClass统一管理排除字符类
         private static readonly Regex DomainRegex = new(
             @"(?<![a-zA-Z0-9])(?:https?://)?(?:[a-zA-Z0-9](?:[-a-zA-Z0-9]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(?:/[^" + GB18030_2022.ChineseStopClass + @"]*)?(?![a-zA-Z0-9])",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // ========== 21. 连字符/下划线连接的单词 ==========
         // 格式：TF-IDF、word1_word2_word3、hello-world、test_case_example
@@ -383,7 +384,7 @@ namespace JiebaNet.Segmenter
         // 注意：使用负向前瞻和后瞻来确保边界正确，支持中文边界
         private static readonly Regex HyphenatedWordRegex = new(
             @"(?<![a-zA-Z0-9])[a-zA-Z0-9]{2,}(?:[-_][a-zA-Z0-9]{2,})+(?![a-zA-Z0-9])",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // 优先级数组（按优先级从高到低排列）
         // 相对时间组合（如"明天下午3点"）优先级高于单独的时间（如"下午3点"）

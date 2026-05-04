@@ -45,17 +45,17 @@ namespace JiebaNet.Segmenter
         #region Regular Expressions
 
         // 使用GB18030_2022的混合块正则，支持扩展B-I区的代理对字符
-        internal static readonly Regex RegexChineseDefault = new Regex(@"(" + GB18030_2022.ChineseMixedBlockPattern + @")", RegexOptions.Compiled);
+        internal static readonly Regex RegexChineseDefault = new Regex(@"(" + GB18030_2022.ChineseMixedBlockPattern + @")", RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
-        internal static readonly Regex RegexSkipDefault = new Regex(@"(\r\n|\s)", RegexOptions.Compiled);
+        internal static readonly Regex RegexSkipDefault = new Regex(@"(\r\n|\s)", RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // 使用GB18030_2022的中文块正则，支持扩展B-I区的代理对字符
-        internal static readonly Regex RegexChineseCutAll = new Regex(@"(" + GB18030_2022.ChineseBlockPattern + @")", RegexOptions.Compiled);
-        internal static readonly Regex RegexSkipCutAll = new Regex(@"[^a-zA-Z0-9+#\n]", RegexOptions.Compiled);
+        internal static readonly Regex RegexChineseCutAll = new Regex(@"(" + GB18030_2022.ChineseBlockPattern + @")", RegexOptions.Compiled, RegexDefaults.MatchTimeout);
+        internal static readonly Regex RegexSkipCutAll = new Regex(@"[^a-zA-Z0-9+#\n]", RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
-        internal static readonly Regex RegexEnglishChars = new Regex(@"[a-zA-Z0-9]", RegexOptions.Compiled);
+        internal static readonly Regex RegexEnglishChars = new Regex(@"[a-zA-Z0-9]", RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
-        internal static readonly Regex RegexUserDict = new Regex("^(?<word>.+?)(?<freq> [0-9]+)?(?<tag> [a-z]+)?$", RegexOptions.Compiled);
+        internal static readonly Regex RegexUserDict = new Regex("^(?<word>.+?)(?<freq> [0-9]+)?(?<tag> [a-z]+)?$", RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         /// <summary>
         /// Emoji正则表达式：匹配常见emoji范围
@@ -66,7 +66,7 @@ namespace JiebaNet.Segmenter
             @"[\uD83C-\uDBFF][\uDC00-\uDFFF]|" +
             @"[\u2600-\u27BF]|" +
             @"[\uFE00-\uFE0F]",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         #endregion
 
@@ -326,13 +326,16 @@ namespace JiebaNet.Segmenter
         {
             var result = new List<Token>();
 
+            // 构建char偏移到字形簇偏移的映射，确保StartIndex/EndIndex基于字形簇
+            var charToGrapheme = BuildCharToGraphemeMapping(text);
+
             var start = 0;
             if (mode == TokenizerMode.Default)
             {
                 foreach (var w in Cut(text, hmm: hmm))
                 {
                     var width = w.Length;
-                    result.Add(new Token(w, start, start + width));
+                    result.Add(new Token(w, charToGrapheme[start], charToGrapheme[start + width]));
                     start += width;
                 }
             }
@@ -349,7 +352,7 @@ namespace JiebaNet.Segmenter
                             var gram2 = wSpan.Slice(i, 2);
                             if (CurrentWordDict.ContainsWord(gram2))
                             {
-                                result.Add(new Token(gram2.ToString(), start + i, start + i + 2));
+                                result.Add(new Token(gram2.ToString(), charToGrapheme[start + i], charToGrapheme[start + i + 2]));
                             }
                         }
                     }
@@ -361,12 +364,12 @@ namespace JiebaNet.Segmenter
                             var gram3 = wSpan.Slice(i, 3);
                             if (CurrentWordDict.ContainsWord(gram3))
                             {
-                                result.Add(new Token(gram3.ToString(), start + i, start + i + 3));
+                                result.Add(new Token(gram3.ToString(), charToGrapheme[start + i], charToGrapheme[start + i + 3]));
                             }
                         }
                     }
 
-                    result.Add(new Token(w, start, start + width));
+                    result.Add(new Token(w, charToGrapheme[start], charToGrapheme[start + width]));
                     start += width;
                 }
             }
@@ -602,7 +605,13 @@ namespace JiebaNet.Segmenter
                                 var emojiLen = CurrentWordDict.MatchEmoji(x, i);
                                 if (emojiLen > 0)
                                 {
-                                    // 匹配到emoji，直接添加
+                                    // 扩展匹配以包含紧跟的变体选择符，确保不拆散字形簇
+                                    // 例如：❤（U+2764）匹配后，若紧跟️（U+FE0F）则一并包含
+                                    while (i + emojiLen < x.Length &&
+                                           (x[i + emojiLen] == '\uFE0F' || x[i + emojiLen] == '\uFE0E'))
+                                    {
+                                        emojiLen++;
+                                    }
                                     result.Add(x.Substring(i, emojiLen));
                                     i += emojiLen;
                                 }
@@ -731,6 +740,32 @@ namespace JiebaNet.Segmenter
                     words.AddRange(buf.Select(ch => ch.ToString()));
                 }
             }
+        }
+
+        /// <summary>
+        /// 构建char偏移到字形簇偏移的映射表
+        /// charToGrapheme[charOffset] = 该char位置对应的字形簇索引
+        /// 用于Tokenize中将char位置转换为字形簇位置
+        /// </summary>
+        private static int[] BuildCharToGraphemeMapping(string text)
+        {
+            var charToGrapheme = new int[text.Length + 1];
+            var graphemeIdx = 0;
+            var charIdx = 0;
+            var graphemes = GraphemeClusterHelper.SplitToGraphemes(text);
+            foreach (var g in graphemes)
+            {
+                // 同一字形簇内的所有char映射到同一个字形簇索引
+                for (var j = 0; j < g.Length; j++)
+                {
+                    charToGrapheme[charIdx + j] = graphemeIdx;
+                }
+                charIdx += g.Length;
+                graphemeIdx++;
+            }
+            // 末尾位置：文本结束后的字形簇索引
+            charToGrapheme[text.Length] = graphemeIdx;
+            return charToGrapheme;
         }
 
         #endregion

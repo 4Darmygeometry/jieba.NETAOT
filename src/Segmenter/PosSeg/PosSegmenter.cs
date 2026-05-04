@@ -28,17 +28,17 @@ namespace JiebaNet.Segmenter.PosSeg
         #region Regular Expressions
 
         // 使用GB18030_2022的混合块正则，支持扩展B-I区的代理对字符
-        internal static readonly Regex RegexChineseInternal = new Regex(@"(" + GB18030_2022.ChineseMixedBlockPattern + @")", RegexOptions.Compiled);
-        internal static readonly Regex RegexSkipInternal = new Regex(@"(\r\n|\s)", RegexOptions.Compiled);
+        internal static readonly Regex RegexChineseInternal = new Regex(@"(" + GB18030_2022.ChineseMixedBlockPattern + @")", RegexOptions.Compiled, RegexDefaults.MatchTimeout);
+        internal static readonly Regex RegexSkipInternal = new Regex(@"(\r\n|\s)", RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         // 使用GB18030_2022的中文块正则，支持扩展B-I区的代理对字符
-        internal static readonly Regex RegexChineseDetail = new Regex(@"(" + GB18030_2022.ChineseBlockPattern + @")", RegexOptions.Compiled);
-        internal static readonly Regex RegexSkipDetail = new Regex(@"([\.0-9]+|[a-zA-Z0-9]+)", RegexOptions.Compiled);
+        internal static readonly Regex RegexChineseDetail = new Regex(@"(" + GB18030_2022.ChineseBlockPattern + @")", RegexOptions.Compiled, RegexDefaults.MatchTimeout);
+        internal static readonly Regex RegexSkipDetail = new Regex(@"([\.0-9]+|[a-zA-Z0-9]+)", RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
-        internal static readonly Regex RegexEnglishWords = new Regex(@"[a-zA-Z0-9]+", RegexOptions.Compiled);
-        internal static readonly Regex RegexNumbers = new Regex(@"[\.0-9]+", RegexOptions.Compiled);
+        internal static readonly Regex RegexEnglishWords = new Regex(@"[a-zA-Z0-9]+", RegexOptions.Compiled, RegexDefaults.MatchTimeout);
+        internal static readonly Regex RegexNumbers = new Regex(@"[\.0-9]+", RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
-        internal static readonly Regex RegexEnglishChar = new Regex(@"^[a-zA-Z0-9]$", RegexOptions.Compiled);
+        internal static readonly Regex RegexEnglishChar = new Regex(@"^[a-zA-Z0-9]$", RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         #endregion
 
@@ -167,20 +167,65 @@ namespace JiebaNet.Segmenter.PosSeg
                         }
                         else
                         {
-                            foreach (var xx in x)
+                            // 优先使用emoji词典匹配复杂emoji
+                            // 如果匹配到emoji词典中的词，直接作为一个整体
+                            // 否则使用Grapheme Cluster分割
+                            var i = 0;
+                            while (i < x.Length)
                             {
-                                var xxs = xx.ToString();
-                                if (RegexNumbers.IsMatch(xxs))
+                                // 尝试匹配emoji词典
+                                var emojiLen = WordDict.MatchEmoji(x, i);
+                                if (emojiLen > 0)
                                 {
-                                    tokens.Add(new Pair(xxs, "m"));
-                                }
-                                else if (RegexEnglishWords.IsMatch(x))
-                                {
-                                    tokens.Add(new Pair(xxs, "eng"));
+                                    // 扩展匹配以包含紧跟的变体选择符，确保不拆散字形簇
+                                    while (i + emojiLen < x.Length &&
+                                           (x[i + emojiLen] == '\uFE0F' || x[i + emojiLen] == '\uFE0E'))
+                                    {
+                                        emojiLen++;
+                                    }
+                                    var emojiWord = x.Substring(i, emojiLen);
+                                    tokens.Add(new Pair(emojiWord, "x"));
+                                    i += emojiLen;
                                 }
                                 else
                                 {
-                                    tokens.Add(new Pair(xxs, "x"));
+                                    // 没有匹配到emoji，使用Grapheme Cluster分割
+                                    var graphemes = RuneHelper.SplitToGraphemes(x.Substring(i));
+                                    if (graphemes.Count > 0)
+                                    {
+                                        var g = graphemes[0];
+                                        if (RegexNumbers.IsMatch(g))
+                                        {
+                                            tokens.Add(new Pair(g, "m"));
+                                        }
+                                        else if (RegexEnglishWords.IsMatch(g))
+                                        {
+                                            tokens.Add(new Pair(g, "eng"));
+                                        }
+                                        else
+                                        {
+                                            tokens.Add(new Pair(g, "x"));
+                                        }
+                                        i += g.Length;
+                                    }
+                                    else
+                                    {
+                                        // 兜底：单字符
+                                        var xxs = x[i].ToString();
+                                        if (RegexNumbers.IsMatch(xxs))
+                                        {
+                                            tokens.Add(new Pair(xxs, "m"));
+                                        }
+                                        else if (RegexEnglishWords.IsMatch(xxs))
+                                        {
+                                            tokens.Add(new Pair(xxs, "eng"));
+                                        }
+                                        else
+                                        {
+                                            tokens.Add(new Pair(xxs, "x"));
+                                        }
+                                        i++;
+                                    }
                                 }
                             }
                         }
@@ -367,7 +412,12 @@ namespace JiebaNet.Segmenter.PosSeg
                 }
                 else
                 {
-                    words.AddRange(buf.Select(ch => new Pair(ch.ToString(), "x")));
+                    // 使用Grapheme Cluster分割，避免拆散emoji代理对
+                    var graphemes = RuneHelper.SplitToGraphemes(buf);
+                    foreach (var g in graphemes)
+                    {
+                        words.Add(new Pair(g, "x"));
+                    }
                 }
             }
         }

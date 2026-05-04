@@ -15,8 +15,8 @@ namespace JiebaNet.Segmenter.FinalSeg
         private static readonly char[] States = { 'B', 'M', 'E', 'S' };
 
         // 使用GB18030_2022的中文块正则，支持扩展B-I区的代理对字符
-        private static readonly Regex RegexChinese = new Regex(@"(" + GB18030_2022.ChineseBlockPattern + @")", RegexOptions.Compiled);
-        private static readonly Regex RegexSkip = new Regex(@"([a-zA-Z0-9]+(?:\.\d+)?%?)", RegexOptions.Compiled);
+        private static readonly Regex RegexChinese = new Regex(@"(" + GB18030_2022.ChineseBlockPattern + @")", RegexOptions.Compiled, RegexDefaults.MatchTimeout);
+        private static readonly Regex RegexSkip = new Regex(@"([a-zA-Z0-9]+(?:\.\d+)?%?)", RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         private static IDictionary<char, IDictionary<char, double>> _emitProbs = null!;
         private static IDictionary<char, double> _startProbs = null!;

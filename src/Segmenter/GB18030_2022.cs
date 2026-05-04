@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
+using JiebaNet.Segmenter.Common;
 
 namespace JiebaNet.Segmenter
 {
@@ -405,7 +406,7 @@ namespace JiebaNet.Segmenter
         /// <summary>
         /// 获取中文字符正则表达式（完整范围，已编译）
         /// </summary>
-        internal static Regex ChineseFullRegex { get; } = new(ChineseFullPattern, RegexOptions.Compiled);
+        internal static Regex ChineseFullRegex { get; } = new(ChineseFullPattern, RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         /// <summary>
         /// 获取包含代理对的中文正则表达式模式（用于分割文本）
@@ -421,7 +422,7 @@ namespace JiebaNet.Segmenter
         /// <summary>
         /// 获取中文块正则表达式（已编译）
         /// </summary>
-        internal static Regex ChineseBlockRegex { get; } = new(ChineseBlockPattern, RegexOptions.Compiled);
+        internal static Regex ChineseBlockRegex { get; } = new(ChineseBlockPattern, RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         /// <summary>
         /// 获取中文+字母数字混合块正则表达式模式
@@ -437,7 +438,7 @@ namespace JiebaNet.Segmenter
         /// <summary>
         /// 获取中文+字母数字混合块正则表达式（已编译）
         /// </summary>
-        internal static Regex ChineseMixedBlockRegex { get; } = new(ChineseMixedBlockPattern, RegexOptions.Compiled);
+        internal static Regex ChineseMixedBlockRegex { get; } = new(ChineseMixedBlockPattern, RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
         /// <summary>
         /// 将文本分割成中文块和非中文块
