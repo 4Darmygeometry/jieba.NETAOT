@@ -9,6 +9,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="expression">MIT OR Apache-2.0</license>
     <projectUrl>https://github.com/4Darmygeometry/jieba.NETAOT/</projectUrl>
+    <icon>AOTba.png</icon>
     <readme>README.md</readme>
     <description>AOTba是jieba中文分词的.NET版本（C#实现），支持AOT编译。
 
@@ -46,6 +47,7 @@
   </metadata>
   <files>
     <file src="..\..\README.md" target="" />
+    <file src="AOTba.png" target="" />
     <file src="..\Segmenter\bin\Release\net10.0\JiebaNet.Segmenter.dll" target="lib\net10.0\" />
     <file src="..\Analyser\bin\Release\net10.0\JiebaNet.Analyser.dll" target="lib\net10.0\" />
     <file src="..\Segmenter\bin\Release\netstandard2.1\JiebaNet.Segmenter.dll" target="lib\netstandard2.1\" />

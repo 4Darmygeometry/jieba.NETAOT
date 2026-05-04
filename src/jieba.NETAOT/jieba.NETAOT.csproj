@@ -10,6 +10,7 @@
     <Copyright>Copyright © andersc, 4Darmygeometry 2026</Copyright>
     <RepositoryUrl>https://github.com/4Darmygeometry/jieba.NETAOT/</RepositoryUrl>
     <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
+    <PackageIcon>AOTba.png</PackageIcon>
     <PackageTags>chinese;nlp;segmentation;jieba;aot;emoji;traditional-chinese;GB18030</PackageTags>
     <PackageId>AOTba</PackageId>
     <IsPackable>true</IsPackable>
@@ -24,6 +25,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Segmenter\Segmenter.csproj" PrivateAssets="All" />
     <ProjectReference Include="..\Analyser\Analyser.csproj" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="AOTba.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>
