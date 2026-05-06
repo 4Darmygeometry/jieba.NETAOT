@@ -35,7 +35,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Shim.System.Text.Rune" Version="6.0.2" />
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.7" />
   </ItemGroup>
 
   <!-- .NET Standard 2.0 和 .NET Framework 4.8 配置 -->
