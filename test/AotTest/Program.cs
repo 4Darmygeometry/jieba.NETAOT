@@ -1291,15 +1291,15 @@ class Program
         {
             var segmenter = new JiebaSegmenter();
 
-            // 测试1：𰻝𰻝面（扩展G区字符，U+30EDD）
-            var text1 = "我今天吃了𰻝𰻝面，很好吃";
+            // 测试1：𩽾𩾌（扩展B区字符，U+29F7E、U+29F8C）
+            var text1 = "𩽾𩾌是深海中的一种鱼类";
             var result1 = segmenter.Cut(text1).ToList();
             var joined1 = string.Join("╱", result1);
             Console.WriteLine($"  测试1: {text1}");
             Console.WriteLine($"  结果: {joined1}");
-            if (!result1.Contains("𰻝𰻝面"))
+            if (!result1.Contains("𩽾𩾌"))
             {
-                Console.WriteLine("  失败 ✗ '𰻝𰻝面'未被正确识别");
+                Console.WriteLine("  失败 ✗ '𩽾𩾌'未被正确识别");
                 return false;
             }
 
@@ -1327,37 +1327,49 @@ class Program
                 return false;
             }
 
-            // 测试4：半𮱻（扩展I区字符，U+2EC7B，U+5F84的日本新字体字形）
-            var text4 = "半径的日本新字体字形是半𮱻，繁体写作半徑";
+            // 测试4：𰻝𰻝面（扩展G区字符，U+30EDD）
+            var text4 = "我今天吃了𰻝𰻝面，很好吃";
             var result4 = segmenter.Cut(text4).ToList();
             var joined4 = string.Join("╱", result4);
             Console.WriteLine($"  测试4: {text4}");
             Console.WriteLine($"  结果: {joined4}");
-            if (!result4.Contains("半𮱻"))
+            if (!result4.Contains("𰻝𰻝面"))
+            {
+                Console.WriteLine("  失败 ✗ '𰻝𰻝面'未被正确识别");
+                return false;
+            }
+
+            // 测试5：半𮱻（扩展I区字符，U+2EC7B，U+5F84的日本新字体字形）
+            var text5 = "半径的日本新字体字形是半𮱻，繁体写作半徑";
+            var result5 = segmenter.Cut(text5).ToList();
+            var joined5 = string.Join("╱", result5);
+            Console.WriteLine($"  测试5: {text5}");
+            Console.WriteLine($"  结果: {joined5}");
+            if (!result5.Contains("半𮱻"))
             {
                 Console.WriteLine("  失败 ✗ '半𮱻'未被正确识别");
                 return false;
             }
 
-            // 测试5：混合场景
-            var text5 = "从𧒽岗出发，经过石𬒔，最后去吃𰻝𰻝面";
-            var result5 = segmenter.Cut(text5).ToList();
-            var joined5 = string.Join("╱", result5);
-            Console.WriteLine($"  测试5: {text5}");
-            Console.WriteLine($"  结果: {joined5}");
-            if (!result5.Contains("𧒽岗") || !result5.Contains("石𬒔") || !result5.Contains("𰻝𰻝面"))
+            // 测试6：混合场景
+            var text6 = "从𧒽岗出发，经过石𬒔，最后去吃𰻝𰻝面和𩽾𩾌料理";
+            var result6 = segmenter.Cut(text6).ToList();
+            var joined6 = string.Join("╱", result6);
+            Console.WriteLine($"  测试6: {text6}");
+            Console.WriteLine($"  结果: {joined6}");
+            if (!result6.Contains("𧒽岗") || !result6.Contains("石𬒔") || !result6.Contains("𰻝𰻝面") || !result6.Contains("𩽾𩾌"))
             {
                 Console.WriteLine("  失败 ✗ 混合场景生僻字未被正确识别");
                 return false;
             }
 
-            // 测试6：〇字符（IDEOGRAPHIC NUMBER ZERO，U+3007）
-            var text6 = "二〇一〇年";
-            var result6 = segmenter.Cut(text6).ToList();
-            var joined6 = string.Join("╱", result6);
-            Console.WriteLine($"  测试6: {text6}");
-            Console.WriteLine($"  结果: {joined6}");
-            if (!result6.Contains("二〇一〇年"))
+            // 测试7：〇字符（IDEOGRAPHIC NUMBER ZERO，U+3007）
+            var text7 = "二〇一〇年";
+            var result7 = segmenter.Cut(text7).ToList();
+            var joined7 = string.Join("╱", result7);
+            Console.WriteLine($"  测试7: {text7}");
+            Console.WriteLine($"  结果: {joined7}");
+            if (!result7.Contains("二〇一〇年"))
             {
                 Console.WriteLine("  失败 ✗ '二〇一〇年'未被正确识别（〇字符）");
                 return false;
