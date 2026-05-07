@@ -345,7 +345,7 @@ namespace JiebaNet.Segmenter
         /// </remarks>
         internal static bool IsCJKHighSurrogate(char c)
         {
-            // 扩展B-F区、I区和SIP预留汉字区：0xD840-0xD87A
+            // 扩展B-F区、I区和SIP预留汉字区：0xD840-0xD87F
             if (c >= '\uD840' && c <= '\uD87F')
                 return true;
             // 扩展G-H区：0xD880-0xD888
