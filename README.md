@@ -32,6 +32,7 @@ jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的
 * 内置正则超时熔断保护，可防ReDos攻击
 * 1.0.9及以前为 MIT 授权协议，1.0.10及以上为 Apache 2.0 与 MIT 双授权协议，可以商用闭源发布
 * 100%向下兼容jieba.NET的语法，仅需换nuget包即可完成迁移
+* 支持Windows 7 SP1及以上操作系统（若要完整显示GB18030-2022所有文本，须Windows 11 24H2及次上）
 
 ## 算法
 
@@ -41,7 +42,9 @@ jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的
 
 ## 安装和配置
 
-安装配置前需确保Visual Studio版本在2026及以上
+若是源码修改，安装配置前需确保Visual Studio版本在2026及以上
+
+若安装nuget包，需确保Visual Studio版本在2019及以上
 
 当前版本支持net10.0、net48、netstandard2.0和netstandard2.1（兼容.NET 6+），可以手动引用项目，也可以通过NuGet添加引用：
 
