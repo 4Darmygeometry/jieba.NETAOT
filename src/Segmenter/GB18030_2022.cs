@@ -338,13 +338,14 @@ namespace JiebaNet.Segmenter
         /// <returns>如果是CJK代理对的高位代理返回true，否则返回false</returns>
         /// <remarks>
         /// CJK扩展B-I区使用代理对表示：
-        /// - 扩展B-F区：高位代理 0xD840-0xD87F
+        /// - 扩展B-F区：高位代理 0xD840-0xD87A
         /// - 扩展I区：高位代理 0xD87A-0xD87B
+        /// - SIP预留汉字区：高位代理 0xD87B-0xD87F
         /// - 扩展G-H区：高位代理 0xD880-0xD888
         /// </remarks>
         internal static bool IsCJKHighSurrogate(char c)
         {
-            // 扩展B-F区和I区：0xD840-0xD87F
+            // 扩展B-F区、I区和SIP预留汉字区：0xD840-0xD87A
             if (c >= '\uD840' && c <= '\uD87F')
                 return true;
             // 扩展G-H区：0xD880-0xD888
@@ -360,7 +361,7 @@ namespace JiebaNet.Segmenter
         /// 包含基本区和扩展A-I区，以及GB18030-2022补充区块，适用于字符串匹配场景。
         /// 注意：扩展B-I区使用代理对表示。
         /// 代理对范围说明：
-        /// - 扩展B-F区：\uD840-\uD87F 高位代理
+        /// - 扩展B-F区：\uD840-\uD87A 高位代理
         /// - 扩展I区：\uD87A-\uD87B 高位代理（0x2EBF0-0x2EE5D）
         /// - 扩展G-H区：\uD880-\uD888 高位代理（0x30000-0x323AF）
         /// GB18030-2022补充区块：
