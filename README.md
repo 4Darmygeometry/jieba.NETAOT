@@ -1,6 +1,6 @@
 jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的.NET版本（C#实现），支持AOT编译。
 
-当前版本为1.1.5，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式（如须使用paddle模式，请见https://github.com/sdcb/PaddleSharp/blob/master/docs%2Fpaddlenlp-lac.md ）。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
+当前版本为1.1.6 LTS，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式（如须使用paddle模式，请见https://github.com/sdcb/PaddleSharp/blob/master/docs%2Fpaddlenlp-lac.md ）。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
 
 此外，也提供了 `KeywordProcessor`，参考 [FlashText](https://github.com/vi3k6i5/flashtext) 实现。`KeywordProcessor` 可以更灵活地从文本中提取**词典中的关键词**，比如忽略大小写、含空格的词等。
 
@@ -715,10 +715,13 @@ using System.Text;
 
 class TimeRecognizerDemo
 {
-    static void Main(string[] args)
+    private static int _passedCount = 0;
+    private static int _failedCount = 0;
+
+    static int Main(string[] args)
     {
         Console.OutputEncoding = Encoding.UTF8;
-        Console.WriteLine("=== AOTba ITimeRecognizer 实体提取演示 ===\n");
+        Console.WriteLine("=== AOTba ITimeRecognizer 实体提取测试 ===\n");
 
         ITimeRecognizer recognizer = new RegexTimeRecognizer();
 
@@ -728,7 +731,16 @@ class TimeRecognizerDemo
                       "联调安排在Q2，最终版本用v2.5.0-rc2，" +
                       "deadline是2025-06-30，有问题随时找我，" +
                       "文档发你邮箱了，参考https://wiki.company.com/project-x";
-        ExtractAndShow(recognizer, workText);
+        var workExpected = new[]
+        {
+            ("下周四上午10点", "relativedate"),
+            ("3个工作日", "duration"),
+            ("Q2", "quarter"),
+            ("v2.5.0-rc2", "version"),
+            ("deadline是2025-06-30", "deadline"),
+            ("https://wiki.company.com/project-x", "domain"),
+        };
+        RunTest(recognizer, workText, workExpected);
 
         // ========== 2. 社交聊天场景 ==========
         Console.WriteLine("【场景二：朋友约饭】");
@@ -736,7 +748,13 @@ class TimeRecognizerDemo
                       "要是堵车就推迟到8点，" +
                       "对了，那家店在𧒽岗地铁站B口，" +
                       "上次吃的𰻝𰻝面真不错😋";
-        ExtractAndShow(recognizer, chatText);
+        var chatExpected = new[]
+        {
+            ("今晚8点半", "relativedate"),
+            ("7:15", "time"),
+            ("8点", "time"),
+        };
+        RunTest(recognizer, chatText, chatExpected);
 
         // ========== 3. 电商客服场景 ==========
         Console.WriteLine("【场景三：售后沟通】");
@@ -745,7 +763,13 @@ class TimeRecognizerDemo
                          "促销价是原价的85%，" +
                          "商品版本是2024款，" +
                          "有问题请联系www.taobao.com/shop/help";
-        ExtractAndShow(recognizer, serviceText);
+        var serviceExpected = new[]
+        {
+            ("明天下午", "relativedate"),
+            ("85%", "percentage"),
+            ("www.taobao.com/shop/help", "domain"),
+        };
+        RunTest(recognizer, serviceText, serviceExpected);
 
         // ========== 4. 技术讨论场景 ==========
         Console.WriteLine("【场景四：技术方案评审】");
@@ -755,7 +779,16 @@ class TimeRecognizerDemo
                       "部署脚本在https://github.com/team/repo/blob/main/deploy.sh，" +
                       "当前运行的是v3.2.1-beta2，" +
                       "计划春节后上线";
-        ExtractAndShow(recognizer, techText);
+        var techExpected = new[]
+        {
+            ("14:30", "time"),
+            ("15:45", "time"),
+            ("99.9%", "percentage"),
+            ("https://github.com/team/repo/blob/main/deploy.sh", "domain"),
+            ("v3.2.1-beta2", "version"),
+            ("春节", "festival"),
+        };
+        RunTest(recognizer, techText, techExpected);
 
         // ========== 5. 家庭群聊场景 ==========
         Console.WriteLine("【场景五：家庭群通知】");
@@ -764,7 +797,15 @@ class TimeRecognizerDemo
                         "大概十九点到北京西站，" +
                         "记得熬腊八粥，" +
                         "高铁票在12306.cn买的";
-        ExtractAndShow(recognizer, familyText);
+        var familyExpected = new[]
+        {
+            ("春节", "festival"),
+            ("2025年1月29日", "datetimex"),
+            ("腊月二十八晚上9点", "lunardate"),
+            ("十九点", "time"),
+            ("12306.cn", "domain"),
+        };
+        RunTest(recognizer, familyText, familyExpected);
 
         // ========== 6. 新闻资讯场景 ==========
         Console.WriteLine("【场景六：新闻摘要】");
@@ -772,7 +813,15 @@ class TimeRecognizerDemo
                       "届时北京时间同步直播，" +
                       "活动持续约2个小时，" +
                       "详情见www.cctv.com/2024/guoqing";
-        ExtractAndShow(recognizer, newsText);
+        var newsExpected = new[]
+        {
+            ("75周年", "anniversary"),
+            ("10月1日上午10点", "datetimex"),
+            ("北京时间", "timezone"),
+            ("2个小时", "duration"),
+            ("www.cctv.com/2024/guoqing", "domain"),
+        };
+        RunTest(recognizer, newsText, newsExpected);
 
         // ========== 7. 跨场景复杂混合 ==========
         Console.WriteLine("【场景七：混合复杂文本】");
@@ -785,68 +834,309 @@ class TimeRecognizerDemo
                        "占比30%，" +
                        "到货时间是明天下午4:30，" +
                        "有问题微信我，我随时在线👍";
-        ExtractAndShow(recognizer, mixedText);
+        var mixedExpected = new[]
+        {
+            ("v1.3.0-preview1", "version"),
+            ("下周三下午3点", "relativedate"),
+            ("2025-05-20", "datetime"),
+            ("5个工作日", "duration"),
+            ("https://confluence.company.com/display/TEAM/Spec", "domain"),
+            ("1:1:1", "ratio"),
+            ("30%", "percentage"),
+            ("明天下午4:30", "relativedate"),
+        };
+        RunTest(recognizer, mixedText, mixedExpected);
 
         // ========== 8. 实体脱敏演示 ==========
-        Console.WriteLine("=== 实体脱敏演示 ===\n");
+        Console.WriteLine("【场景八：实体脱敏】");
         var sensitive = "张先生的身份证号是11010119900101xxxx，" +
                        "预约了明天上午9点的专家号，" +
                        "费用结算在www.hospital.com/pay，" +
                        "药品版本是v2.0-batch3";
-        Console.WriteLine($"原文: {sensitive}");
-        var entities = recognizer.Recognize(sensitive);
-        var masked = MaskEntities(sensitive, entities);
-        Console.WriteLine($"脱敏: {masked}\n");
+        var sensitiveExpected = new[]
+        {
+            ("明天上午9点", "relativedate"),
+            ("www.hospital.com/pay", "domain"),
+            ("v2.0-batch3", "version"),
+        };
+        RunTest(recognizer, sensitive, sensitiveExpected);
+
+        // 脱敏后结果显示
+        var sensitiveEntities = recognizer.Recognize(sensitive);
+        var masked = MaskEntities(sensitive, sensitiveEntities);
+        Console.WriteLine($"  脱敏前: {sensitive}");
+        Console.WriteLine($"  脱敏后: {masked}");
+        Console.WriteLine();
 
         // ========== 9. 按类型筛选演示 ==========
-        Console.WriteLine("=== 按类型筛选：仅提取时间实体 ===\n");
+        Console.WriteLine("【场景九：按类型筛选】");
         var filterText = "项目截止2025-06-30，每周三下午2:30开会，" +
                         "使用v3.2.1版本，参考https://docs.example.com，" +
                         "北京时间九点整发布";
-        var all = recognizer.Recognize(filterText);
-        var timeOnly = all.Where(e =>
-            e.Type is "datetime" or "time" or "relativedate" or
-                      "timerange" or "deadline" or "timezone" or "weekday"
-        ).OrderBy(e => e.Start);
-
-        Console.WriteLine($"文本: {filterText}");
-        foreach (var e in timeOnly)
+        var filterExpected = new[]
         {
-            Console.WriteLine($"  [{e.Start}-{e.End}] {e.Type,-12} => {e.Text}");
-        }
+            ("截止2025-06-30", "deadline"),
+            ("周三下午2:30", "relativedate"),
+            ("v3.2.1版本", "version"),
+            ("https://docs.example.com", "domain"),
+            ("北京时间", "timezone"),
+            ("九点整", "time"),
+        };
+        RunTest(recognizer, filterText, filterExpected);
+
+        // ========== 10. 中文数字年份识别 ==========
+        Console.WriteLine("【场景十：中文数字年份识别】");
+        var chineseYearText = "我是二零一零年出生的，" +
+                             "二〇一〇年五月一日是重要日子，" +
+                             "二零二一年五月是项目启动时间";
+        var chineseYearExpected = new[]
+        {
+            ("二零一零年", "datetimex"),
+            ("二〇一〇年五月一日", "datetimex"),
+            ("二零二一年五月", "datetimex"),
+        };
+        RunTest(recognizer, chineseYearText, chineseYearExpected);
+
+        // ========== 11. GB18030-2022补充区块 ==========
+        Console.WriteLine("【场景十一：GB18030-2022补充区块】");
+        var gb18030Text = "二〇一〇年，" +
+                         "汉字笔画㇐是横，" +
+                         "汉字结构⿰表示左右结构，" +
+                         "汉语注音ㄅ是玻，" +
+                         "注音扩展ㆠ用于方言";
+        var gb18030Expected = new[]
+        {
+            ("二〇一〇年", "datetimex"),
+        };
+        RunTest(recognizer, gb18030Text, gb18030Expected);
+
+        // ========== 测试结果汇总 ==========
+        Console.WriteLine("\n=== 测试结果汇总 ===");
+        Console.WriteLine($"通过: {_passedCount}");
+        Console.WriteLine($"失败: {_failedCount}");
+        Console.WriteLine($"总计: {_passedCount + _failedCount}");
+
+        return _failedCount > 0 ? 1 : 0;
     }
 
-    static void ExtractAndShow(ITimeRecognizer recognizer, string text)
+    static void RunTest(ITimeRecognizer recognizer, string text, (string expectedText, string expectedType)[] expectedEntities)
     {
         Console.WriteLine($"文本: {text}");
         var entities = recognizer.Recognize(text);
+        var entitiesList = entities.OrderBy(x => x.Start).ToList();
 
-        if (entities.Count == 0)
+        // 显示识别结果
+        if (entitiesList.Count == 0)
         {
             Console.WriteLine("  → 未识别到实体");
         }
         else
         {
-            foreach (var e in entities.OrderBy(x => x.Start))
+            foreach (var e in entitiesList)
             {
                 Console.WriteLine($"  [{e.Start,3}-{e.End,3}] {e.Type,-12} => {e.Text}");
             }
         }
+
+        // 验证预期结果
+        bool allPassed = true;
+        foreach (var (expectedText, expectedType) in expectedEntities)
+        {
+            var found = entitiesList.Any(e => e.Text == expectedText && e.Type == expectedType);
+            if (found)
+            {
+                Console.WriteLine($"  ✓ 预期: [{expectedType}] {expectedText}");
+            }
+            else
+            {
+                Console.WriteLine($"  ✗ 缺失: [{expectedType}] {expectedText}");
+                allPassed = false;
+            }
+        }
+
+        if (allPassed)
+        {
+            Console.WriteLine("  通过 ✓");
+            _passedCount++;
+        }
+        else
+        {
+            Console.WriteLine("  失败 ✗");
+            _failedCount++;
+        }
         Console.WriteLine();
     }
 
-    static string MaskEntities(string text, List<TimeEntity> entities)
+    /// <summary>
+    /// 将文本中的实体替换为[类型]标记，实现脱敏
+    /// </summary>
+    static string MaskEntities(string text, IEnumerable<TimeEntity> entities)
     {
-        var sb = new System.Text.StringBuilder(text);
-        // 倒序替换避免索引偏移
-        foreach (var e in entities.OrderByDescending(x => x.Start))
+        var sorted = entities.OrderByDescending(e => e.Start).ToList();
+        var result = text;
+        foreach (var e in sorted)
         {
-            sb.Remove(e.Start, e.End - e.Start);
-            sb.Insert(e.Start, $"[{e.Type.ToUpper()}]");
+            result = result.Remove(e.Start, e.End - e.Start).Insert(e.Start, $"[{e.Type}]");
         }
-        return sb.ToString();
+        return result;
     }
 }
 ```
 
-运行效果可以参考CI测试
+运行效果见：
+```
+=== AOTba ITimeRecognizer 实体提取测试 ===
+
+【场景一：项目排期会议】
+文本: 王总，需求评审定在下周四上午10点，开发周期约3个工作日，联调安排在Q2，最终版本用v2.5.0-rc2，deadline是2025-06-30，有问题随时找我，文档发你邮箱了，参考https://wiki.company.com/project-x
+  [  9- 17] relativedate => 下周四上午10点
+  [ 23- 28] duration     => 3个工作日
+  [ 34- 36] quarter      => Q2
+  [ 42- 52] version      => v2.5.0-rc2
+  [ 53- 72] deadline     => deadline是2025-06-30
+  [ 91-125] domain       => https://wiki.company.com/project-x
+  ✓ 预期: [relativedate] 下周四上午10点
+  ✓ 预期: [duration] 3个工作日
+  ✓ 预期: [quarter] Q2
+  ✓ 预期: [version] v2.5.0-rc2
+  ✓ 预期: [deadline] deadline是2025-06-30
+  ✓ 预期: [domain] https://wiki.company.com/project-x
+  通过 ✓
+
+【场景二：朋友约饭】
+文本: 今晚8点半老地方见，我大概7:15下班，要是堵车就推迟到8点，对了，那家店在𧒽岗地铁站B口，上次吃的𰻝𰻝面真不错😋
+  [  0-  5] relativedate => 今晚8点半
+  [ 13- 17] time         => 7:15
+  [ 28- 30] time         => 8点
+  ✓ 预期: [relativedate] 今晚8点半
+  ✓ 预期: [time] 7:15
+  ✓ 预期: [time] 8点
+  通过 ✓
+
+【场景三：售后沟通】
+文本: 亲，您的订单预计明天下午送达，物流显示已到佛山市南海区桂城街道转运中心，促销价是原价的85%，商品版本是2024款，有问题请联系www.taobao.com/shop/help
+  [  8- 12] relativedate => 明天下午
+  [ 43- 46] percentage   => 85%
+  [ 64- 88] domain       => www.taobao.com/shop/help
+  ✓ 预期: [relativedate] 明天下午
+  ✓ 预期: [percentage] 85%
+  ✓ 预期: [domain] www.taobao.com/shop/help
+  通过 ✓
+
+【场景四：技术方案评审】
+文本: CI构建耗时从14:30持续到15:45，TF-IDF阈值设为0.02，测试覆盖率要求达到99.9%，部署脚本在https://github.com/team/repo/blob/main/deploy.sh，当前运行的是v3.2.1-beta2，计划春节后上线
+  [  7- 12] time         => 14:30
+  [ 15- 20] time         => 15:45
+  [ 21- 27] hyphenated   => TF-IDF
+  [ 45- 50] percentage   => 99.9%
+  [ 56-104] domain       => https://github.com/team/repo/blob/main/deploy.sh
+  [105-107] relativedate => 当前
+  [111-123] version      => v3.2.1-beta2
+  [126-128] festival     => 春节
+  ✓ 预期: [time] 14:30
+  ✓ 预期: [time] 15:45
+  ✓ 预期: [percentage] 99.9%
+  ✓ 预期: [domain] https://github.com/team/repo/blob/main/deploy.sh
+  ✓ 预期: [version] v3.2.1-beta2
+  ✓ 预期: [festival] 春节
+  通过 ✓
+
+【场景五：家庭群通知】
+文本: 妈，今年春节是2025年1月29日，我腊月二十八晚上9点的火车，大概十九点到北京西站，记得熬腊八粥，高铁票在12306.cn买的
+  [  4-  6] festival     => 春节
+  [  7- 17] datetimex    => 2025年1月29日
+  [ 19- 28] lunardate    => 腊月二十八晚上9点
+  [ 34- 37] time         => 十九点
+  [ 54- 62] domain       => 12306.cn
+  ✓ 预期: [festival] 春节
+  ✓ 预期: [datetimex] 2025年1月29日
+  ✓ 预期: [lunardate] 腊月二十八晚上9点
+  ✓ 预期: [time] 十九点
+  ✓ 预期: [domain] 12306.cn
+  通过 ✓
+
+【场景六：新闻摘要】
+文本: 新中国成立75周年庆典将于10月1日上午10点举行，届时北京时间同步直播，活动持续约2个小时，详情见www.cctv.com/2024/guoqing
+  [  5-  9] anniversary  => 75周年
+  [ 13- 23] datetimex    => 10月1日上午10点
+  [ 28- 32] timezone     => 北京时间
+  [ 42- 46] duration     => 2个小时
+  [ 50- 75] domain       => www.cctv.com/2024/guoqing
+  ✓ 预期: [anniversary] 75周年
+  ✓ 预期: [datetimex] 10月1日上午10点
+  ✓ 预期: [timezone] 北京时间
+  ✓ 预期: [duration] 2个小时
+  ✓ 预期: [domain] www.cctv.com/2024/guoqing
+  通过 ✓
+
+【场景七：混合复杂文本】
+文本: 李经理，方案v1.3.0-preview1已发你钉钉，评审会改到下周三下午3点，比之前定的2025-05-20提前了，工期压缩到5个工作日，参考文档在https://confluence.company.com/display/TEAM/Spec，金龙鱼1:1:1调和油是本次采购的样品之一，占比30%，到货时间是明天下午4:30，有问题微信我，我随时在线👍
+  [  6- 21] version      => v1.3.0-preview1
+  [ 32- 39] relativedate => 下周三下午3点
+  [ 45- 55] datetime     => 2025-05-20
+  [ 64- 69] duration     => 5个工作日
+  [ 75-123] domain       => https://confluence.company.com/display/TEAM/Spec
+  [127-132] ratio        => 1:1:1
+  [148-151] percentage   => 30%
+  [157-165] relativedate => 明天下午4:30
+  ✓ 预期: [version] v1.3.0-preview1
+  ✓ 预期: [relativedate] 下周三下午3点
+  ✓ 预期: [datetime] 2025-05-20
+  ✓ 预期: [duration] 5个工作日
+  ✓ 预期: [domain] https://confluence.company.com/display/TEAM/Spec
+  ✓ 预期: [ratio] 1:1:1
+  ✓ 预期: [percentage] 30%
+  ✓ 预期: [relativedate] 明天下午4:30
+  通过 ✓
+
+【场景八：实体脱敏】
+文本: 张先生的身份证号是11010119900101xxxx，预约了明天上午9点的专家号，费用结算在www.hospital.com/pay，药品版本是v2.0-batch3
+  [ 31- 37] relativedate => 明天上午9点
+  [ 47- 67] domain       => www.hospital.com/pay
+  [ 73- 84] version      => v2.0-batch3
+  ✓ 预期: [relativedate] 明天上午9点
+  ✓ 预期: [domain] www.hospital.com/pay
+  ✓ 预期: [version] v2.0-batch3
+  通过 ✓
+
+  脱敏前: 张先生的身份证号是11010119900101xxxx，预约了明天上午9点的专家号，费用结算在www.hospital.com/pay，药品版本是v2.0-batch3
+  脱敏后: 张先生的身份证号是11010119900101xxxx，预约了[relativedate]的专家号，费用结算在[domain]，药品版本是[version]
+
+【场景九：按类型筛选】
+文本: 项目截止2025-06-30，每周三下午2:30开会，使用v3.2.1版本，参考https://docs.example.com，北京时间九点整发布
+  [  2- 14] deadline     => 截止2025-06-30
+  [ 16- 24] relativedate => 周三下午2:30
+  [ 29- 37] version      => v3.2.1版本
+  [ 40- 64] domain       => https://docs.example.com
+  [ 65- 69] timezone     => 北京时间
+  [ 69- 72] time         => 九点整
+  ✓ 预期: [deadline] 截止2025-06-30
+  ✓ 预期: [relativedate] 周三下午2:30
+  ✓ 预期: [version] v3.2.1版本
+  ✓ 预期: [domain] https://docs.example.com
+  ✓ 预期: [timezone] 北京时间
+  ✓ 预期: [time] 九点整
+  通过 ✓
+
+【场景十：中文数字年份识别】
+文本: 我是二零一零年出生的，二〇一〇年五月一日是重要日子，二零二一年五月是项目启动时间
+  [  2-  7] datetimex    => 二零一零年
+  [ 11- 20] datetimex    => 二〇一〇年五月一日
+  [ 26- 33] datetimex    => 二零二一年五月
+  ✓ 预期: [datetimex] 二零一零年
+  ✓ 预期: [datetimex] 二〇一〇年五月一日
+  ✓ 预期: [datetimex] 二零二一年五月
+  通过 ✓
+
+【场景十一：GB18030-2022补充区块】
+文本: 二〇一〇年，汉字笔画㇐是横，汉字结构⿰表示左右结构，汉语注音ㄅ是玻，注音扩展ㆠ用于方言
+  [  0-  5] datetimex    => 二〇一〇年
+  ✓ 预期: [datetimex] 二〇一〇年
+  通过 ✓
+
+
+=== 测试结果汇总 ===
+通过: 11
+失败: 0
+总计: 11
+```
