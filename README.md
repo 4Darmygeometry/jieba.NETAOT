@@ -32,7 +32,7 @@ jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的
 * 内置正则超时熔断保护，可防ReDos攻击
 * 1.0.9及以前为 MIT 授权协议，1.0.10及以上为 Apache 2.0 与 MIT 双授权协议，可以商用闭源发布
 * 100%向下兼容jieba.NET的语法，仅需换nuget包即可完成迁移
-* 支持Windows 7 SP1及以上操作系统（若要完整显示GB18030-2022所有文本，须Windows 11 24H2及次上）
+* 支持Windows 7 SP1及以上操作系统（若要完整显示GB18030-2022所有文本，须Windows 11 24H2及以上）
 
 ## 算法
 
@@ -51,6 +51,8 @@ jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的
 ```shell
 PM> Install-Package AOTba
 ```
+
+Windows XP用户若使用的软件引用了本项目类库，须参考[B站文章的安装方法](https://www.bilibili.com/opus/1044900873850847240)安装.NET Framework 4.8。
 
 安装之后，在packages\jieba.NET目录下可以看到Resources目录，这里面是jieba.NET运行所需的词典及其它数据文件，最简单的配置方法是将整个Resources目录拷贝到程序集所在目录，这样jieba.NET会使用内置的默认配置值。如果希望将这些文件放在其它位置，则要在app.config或web.config中添加如下的配置项：
 
