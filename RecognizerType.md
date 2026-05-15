@@ -19,6 +19,7 @@
 | **timezone**     |  25 | 时区          | `UTC+8`、`GMT+0`、`北京时间`、`东八区`、`CST`、`EST`                                   |
 | **anniversary**  |  20 | 纪念日/周岁/寿辰   | `75周年`、`60岁`、`十周年纪念`、`华诞`、`大寿`                                             |
 | **percentage**   |  18 | 百分比         | `85%`、`99.9%`、`100.5%`                                                     |
+| **windows**   |  17 | Windows类型         | `Windows 11`、`视窗10`、`win7`                                                     |
 | **version**      |  15 | 版本号         | `v2.5.0-rc2`、`v3.2.1-beta2`、`2.1-alpha1`、`2024款`（带上下文时）                    |
 | **domain**       |  10 | 域名/URL      | `https://wiki.company.com/project-x`、`www.taobao.com/shop/help`、`12306.cn` |
 | **hyphenated**   |  5  | 连字符/下划线连接词  | `TF-IDF`、`word1_word2`、`hello-world`、`test_case_example`                   |
