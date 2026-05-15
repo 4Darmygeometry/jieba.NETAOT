@@ -201,6 +201,35 @@ class TimeRecognizerDemo
         };
         RunTest(recognizer, gb18030Text, gb18030Expected);
 
+        // ========== 12. Windows版本识别 ==========
+        Console.WriteLine("【场景十二：Windows版本识别】");
+        var windowsText = "公司电脑从Windows 7升级到Windows 10，" +
+                         "服务器运行Windows Server 2022，" +
+                         "老机器还装着Windows XP，" +
+                         "新笔记本预装Microsoft Windows 11，" +
+                         "开发环境使用Win 10，" +
+                         "测试Win7兼容性，" +
+                         "视窗95是早期的中文版本，" +
+                         "视窗 10是目前最新的版本，" +
+                         "Win32 API和Win64 API不在识别范围内，" +
+                         "Windows 12预计明年发布，" +
+                         "Windows Server 2025是最新服务器版";
+        var windowsExpected = new[]
+        {
+            ("Windows 7", "windows"),
+            ("Windows 10", "windows"),
+            ("Windows Server 2022", "windows"),
+            ("Windows XP", "windows"),
+            ("Microsoft Windows 11", "windows"),
+            ("Win 10", "windows"),
+            ("Win7", "windows"),
+            ("视窗95", "windows"),
+            ("视窗 10", "windows"),
+            ("Windows 12", "windows"),
+            ("Windows Server 2025", "windows"),
+        };
+        RunTest(recognizer, windowsText, windowsExpected);
+
         // ========== 测试结果汇总 ==========
         Console.WriteLine("\n=== 测试结果汇总 ===");
         Console.WriteLine($"通过: {_passedCount}");

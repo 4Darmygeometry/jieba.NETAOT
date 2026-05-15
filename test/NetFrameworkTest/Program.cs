@@ -47,6 +47,8 @@ namespace JiebaNet.NetFrameworkTest
             allPassed &= TestDomainNames();
             allPassed &= TestGB18030ExtendedCJK();
             allPassed &= TestEntityProtectDisabled();
+            allPassed &= TestWindowsVersionSegment();
+            allPassed &= TestSpaceContainingWords();
 #endif
 
             Console.WriteLine();
@@ -1599,6 +1601,339 @@ namespace JiebaNet.NetFrameworkTest
                 Console.WriteLine($"    基础Emoji: {(hasEmoji ? "✓" : "✗")}");
                 Console.WriteLine($"    ZWJ序列: {(hasZwj ? "✓" : "✗")}");
                 Console.WriteLine($"    变体选择符: {(hasVs ? "✓" : "✗")}");
+
+                Console.WriteLine("  通过 ✓");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  异常: {ex.Message}");
+                return false;
+            }
+        }
+
+        static bool TestWindowsVersionSegment()
+        {
+            Console.WriteLine("[测试] Windows版本识别分词...");
+            try
+            {
+                var segmenter = new JiebaSegmenter();
+
+                // 测试1：Windows 10（标准带空格形式）
+                var text1 = "我使用的是Windows 10操作系统";
+                var result1 = segmenter.Cut(text1).ToList();
+                var joined1 = string.Join("╱", result1);
+                Console.WriteLine($"  测试1: {text1}");
+                Console.WriteLine($"  结果: {joined1}");
+                if (!result1.Contains("Windows 10"))
+                {
+                    Console.WriteLine("  失败 ✗ 'Windows 10'未被正确识别为整体");
+                    return false;
+                }
+
+                // 测试2：Windows7（不带空格形式）
+                var text2 = "我使用的是Windows7操作系统";
+                var result2 = segmenter.Cut(text2).ToList();
+                var joined2 = string.Join("╱", result2);
+                Console.WriteLine($"  测试2: {text2}");
+                Console.WriteLine($"  结果: {joined2}");
+                if (!result2.Contains("Windows7"))
+                {
+                    Console.WriteLine("  失败 ✗ 'Windows7'未被正确识别为整体");
+                    return false;
+                }
+
+                // 测试3：Win 7（Win缩写带空格）
+                var text3 = "我使用的是Win 7操作系统";
+                var result3 = segmenter.Cut(text3).ToList();
+                var joined3 = string.Join("╱", result3);
+                Console.WriteLine($"  测试3: {text3}");
+                Console.WriteLine($"  结果: {joined3}");
+                if (!result3.Contains("Win 7"))
+                {
+                    Console.WriteLine("  失败 ✗ 'Win 7'未被正确识别为整体");
+                    return false;
+                }
+
+                // 测试4：Win7（Win缩写不带空格）
+                var text4 = "我使用的是Win7操作系统";
+                var result4 = segmenter.Cut(text4).ToList();
+                var joined4 = string.Join("╱", result4);
+                Console.WriteLine($"  测试4: {text4}");
+                Console.WriteLine($"  结果: {joined4}");
+                if (!result4.Contains("Win7"))
+                {
+                    Console.WriteLine("  失败 ✗ 'Win7'未被正确识别为整体");
+                    return false;
+                }
+
+                // 测试5：Microsoft Windows 10（完整前缀）
+                var text5 = "我使用的是Microsoft Windows 10操作系统";
+                var result5 = segmenter.Cut(text5).ToList();
+                var joined5 = string.Join("╱", result5);
+                Console.WriteLine($"  测试5: {text5}");
+                Console.WriteLine($"  结果: {joined5}");
+                if (!result5.Contains("Microsoft Windows 10"))
+                {
+                    Console.WriteLine("  失败 ✗ 'Microsoft Windows 10'未被正确识别为整体");
+                    return false;
+                }
+
+                // 测试6：Microsoft(R) Windows(R) 11（带注册商标符号）
+                var text6 = "我使用的是Microsoft(R) Windows(R) 11操作系统";
+                var result6 = segmenter.Cut(text6).ToList();
+                var joined6 = string.Join("╱", result6);
+                Console.WriteLine($"  测试6: {text6}");
+                Console.WriteLine($"  结果: {joined6}");
+                if (!result6.Contains("Microsoft(R) Windows(R) 11"))
+                {
+                    Console.WriteLine("  失败 ✗ 'Microsoft(R) Windows(R) 11'未被正确识别为整体");
+                    return false;
+                }
+
+                // 测试7：Microsoft® Windows® 11（带版权符号）
+                var text7 = "我使用的是Microsoft® Windows® 11操作系统";
+                var result7 = segmenter.Cut(text7).ToList();
+                var joined7 = string.Join("╱", result7);
+                Console.WriteLine($"  测试7: {text7}");
+                Console.WriteLine($"  结果: {joined7}");
+                if (!result7.Contains("Microsoft® Windows® 11"))
+                {
+                    Console.WriteLine("  失败 ✗ 'Microsoft® Windows® 11'未被正确识别为整体");
+                    return false;
+                }
+
+                // 测试8：Windows Server 2022
+                var text8 = "服务器运行Windows Server 2022";
+                var result8 = segmenter.Cut(text8).ToList();
+                var joined8 = string.Join("╱", result8);
+                Console.WriteLine($"  测试8: {text8}");
+                Console.WriteLine($"  结果: {joined8}");
+                if (!result8.Contains("Windows Server 2022"))
+                {
+                    Console.WriteLine("  失败 ✗ 'Windows Server 2022'未被正确识别为整体");
+                    return false;
+                }
+
+                // 测试9：Windows XP（查表匹配）
+                var text9 = "老电脑运行Windows XP系统";
+                var result9 = segmenter.Cut(text9).ToList();
+                var joined9 = string.Join("╱", result9);
+                Console.WriteLine($"  测试9: {text9}");
+                Console.WriteLine($"  结果: {joined9}");
+                if (!result9.Contains("Windows XP"))
+                {
+                    Console.WriteLine("  失败 ✗ 'Windows XP'未被正确识别为整体");
+                    return false;
+                }
+
+                // 测试10：Windows Vista
+                var text10 = "Windows Vista是Windows 7的前身";
+                var result10 = segmenter.Cut(text10).ToList();
+                var joined10 = string.Join("╱", result10);
+                Console.WriteLine($"  测试10: {text10}");
+                Console.WriteLine($"  结果: {joined10}");
+                if (!result10.Contains("Windows Vista") || !result10.Contains("Windows 7"))
+                {
+                    Console.WriteLine("  失败 ✗ 'Windows Vista'或'Windows 7'未被正确识别");
+                    return false;
+                }
+
+                // 测试11：视窗95（中文译名不带空格）
+                var text11 = "视窗95是早期的中文Windows版本";
+                var result11 = segmenter.Cut(text11).ToList();
+                var joined11 = string.Join("╱", result11);
+                Console.WriteLine($"  测试11: {text11}");
+                Console.WriteLine($"  结果: {joined11}");
+                if (!result11.Contains("视窗95"))
+                {
+                    Console.WriteLine("  失败 ✗ '视窗95'未被正确识别为整体");
+                    return false;
+                }
+
+                // 测试12：视窗 10（中文译名带空格）
+                var text12 = "视窗 10是目前最新的Windows版本";
+                var result12 = segmenter.Cut(text12).ToList();
+                var joined12 = string.Join("╱", result12);
+                Console.WriteLine($"  测试12: {text12}");
+                Console.WriteLine($"  结果: {joined12}");
+                if (!result12.Contains("视窗 10"))
+                {
+                    Console.WriteLine("  失败 ✗ '视窗 10'未被正确识别为整体");
+                    return false;
+                }
+
+                // 测试13：Win32不应被识别为Windows版本实体
+                var text13 = "Win32是Windows的32位API";
+                var recognizer13 = new RegexTimeRecognizer();
+                var entities13 = recognizer13.Recognize(text13);
+                var result13 = segmenter.Cut(text13).ToList();
+                var joined13 = string.Join("╱", result13);
+                Console.WriteLine($"  测试13: {text13}");
+                Console.WriteLine($"  结果: {joined13}");
+                Console.WriteLine($"  实体: {string.Join(", ", entities13.Select(e => e.ToString()))}");
+                if (entities13.Any(e => e.Type == "windows" && (e.Text.Contains("Win32") || e.Text == "Win32")))
+                {
+                    Console.WriteLine("  失败 ✗ 'Win32'不应被识别为Windows版本实体");
+                    return false;
+                }
+
+                // 测试14：Win64不应被识别为Windows版本实体
+                var text14 = "Win64是Windows的64位API";
+                var recognizer14 = new RegexTimeRecognizer();
+                var entities14 = recognizer14.Recognize(text14);
+                var result14 = segmenter.Cut(text14).ToList();
+                var joined14 = string.Join("╱", result14);
+                Console.WriteLine($"  测试14: {text14}");
+                Console.WriteLine($"  结果: {joined14}");
+                Console.WriteLine($"  实体: {string.Join(", ", entities14.Select(e => e.ToString()))}");
+                if (entities14.Any(e => e.Type == "windows" && (e.Text.Contains("Win64") || e.Text == "Win64")))
+                {
+                    Console.WriteLine("  失败 ✗ 'Win64'不应被识别为Windows版本实体");
+                    return false;
+                }
+
+                // 测试15：大小写不敏感 - windows 10
+                var text15 = "我使用的是windows 10操作系统";
+                var result15 = segmenter.Cut(text15).ToList();
+                var joined15 = string.Join("╱", result15);
+                Console.WriteLine($"  测试15: {text15}");
+                Console.WriteLine($"  结果: {joined15}");
+                if (!result15.Contains("windows 10"))
+                {
+                    Console.WriteLine("  失败 ✗ 'windows 10'（小写）未被正确识别");
+                    return false;
+                }
+
+                // 测试16：宽松匹配 - Windows 12（查表之外的新版本）
+                var text16 = "Windows 12预计明年发布";
+                var result16 = segmenter.Cut(text16).ToList();
+                var joined16 = string.Join("╱", result16);
+                Console.WriteLine($"  测试16: {text16}");
+                Console.WriteLine($"  结果: {joined16}");
+                if (!result16.Contains("Windows 12"))
+                {
+                    Console.WriteLine("  失败 ✗ 'Windows 12'未被正确识别（宽松匹配）");
+                    return false;
+                }
+
+                // 测试17：宽松匹配 - Windows Server 2025
+                var text17 = "Windows Server 2025是最新的服务器版本";
+                var result17 = segmenter.Cut(text17).ToList();
+                var joined17 = string.Join("╱", result17);
+                Console.WriteLine($"  测试17: {text17}");
+                Console.WriteLine($"  结果: {joined17}");
+                if (!result17.Contains("Windows Server 2025"))
+                {
+                    Console.WriteLine("  失败 ✗ 'Windows Server 2025'未被正确识别（宽松匹配）");
+                    return false;
+                }
+
+                // 测试18：Windows 8.1（带点版本号）
+                var text18 = "Windows 8.1是Windows 8的升级版";
+                var result18 = segmenter.Cut(text18).ToList();
+                var joined18 = string.Join("╱", result18);
+                Console.WriteLine($"  测试18: {text18}");
+                Console.WriteLine($"  结果: {joined18}");
+                if (!result18.Contains("Windows 8.1") || !result18.Contains("Windows 8"))
+                {
+                    Console.WriteLine("  失败 ✗ 'Windows 8.1'或'Windows 8'未被正确识别");
+                    return false;
+                }
+
+                // 测试19：Windows 2000
+                var text19 = "Windows 2000是NT 5.0的商业名称";
+                var result19 = segmenter.Cut(text19).ToList();
+                var joined19 = string.Join("╱", result19);
+                Console.WriteLine($"  测试19: {text19}");
+                Console.WriteLine($"  结果: {joined19}");
+                if (!result19.Contains("Windows 2000"))
+                {
+                    Console.WriteLine("  失败 ✗ 'Windows 2000'未被正确识别");
+                    return false;
+                }
+
+                // 测试20：Windows NT 4.0
+                var text20 = "Windows NT 4.0发布于1996年";
+                var result20 = segmenter.Cut(text20).ToList();
+                var joined20 = string.Join("╱", result20);
+                Console.WriteLine($"  测试20: {text20}");
+                Console.WriteLine($"  结果: {joined20}");
+                if (!result20.Contains("Windows NT 4.0"))
+                {
+                    Console.WriteLine("  失败 ✗ 'Windows NT 4.0'未被正确识别");
+                    return false;
+                }
+
+                Console.WriteLine("  通过 ✓");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  异常: {ex.Message}");
+                return false;
+            }
+        }
+
+        static bool TestSpaceContainingWords()
+        {
+            Console.WriteLine("[测试] 带空格词分词...");
+            try
+            {
+                var segmenter = new JiebaSegmenter();
+
+                // 添加带空格词到词典
+                segmenter.AddWord("Kimi K2.5", 3000, "nz");
+                segmenter.AddWord("GPT 4o", 5000, "nz");
+                segmenter.AddWord("Claude 3.5 Sonnet", 4000, "nz");
+
+                // 测试1：Kimi K2.5
+                var text1 = "Kimi K2.5是一个大语言模型";
+                var result1 = segmenter.Cut(text1).ToList();
+                var joined1 = string.Join("╱", result1);
+                Console.WriteLine($"  测试1: {text1}");
+                Console.WriteLine($"  结果: {joined1}");
+                if (!result1.Contains("Kimi K2.5"))
+                {
+                    Console.WriteLine("  失败 ✗ 'Kimi K2.5'未被正确识别为整体");
+                    return false;
+                }
+
+                // 测试2：GPT 4o
+                var text2 = "GPT 4o是OpenAI的多模态模型";
+                var result2 = segmenter.Cut(text2).ToList();
+                var joined2 = string.Join("╱", result2);
+                Console.WriteLine($"  测试2: {text2}");
+                Console.WriteLine($"  结果: {joined2}");
+                if (!result2.Contains("GPT 4o"))
+                {
+                    Console.WriteLine("  失败 ✗ 'GPT 4o'未被正确识别为整体");
+                    return false;
+                }
+
+                // 测试3：Claude 3.5 Sonnet（三个词的带空格词）
+                var text3 = "Claude 3.5 Sonnet是Anthropic的模型";
+                var result3 = segmenter.Cut(text3).ToList();
+                var joined3 = string.Join("╱", result3);
+                Console.WriteLine($"  测试3: {text3}");
+                Console.WriteLine($"  结果: {joined3}");
+                if (!result3.Contains("Claude 3.5 Sonnet"))
+                {
+                    Console.WriteLine("  失败 ✗ 'Claude 3.5 Sonnet'未被正确识别为整体");
+                    return false;
+                }
+
+                // 测试4：混合场景
+                var text4 = "对比Kimi K2.5和GPT 4o的性能";
+                var result4 = segmenter.Cut(text4).ToList();
+                var joined4 = string.Join("╱", result4);
+                Console.WriteLine($"  测试4: {text4}");
+                Console.WriteLine($"  结果: {joined4}");
+                if (!result4.Contains("Kimi K2.5") || !result4.Contains("GPT 4o"))
+                {
+                    Console.WriteLine("  失败 ✗ 混合场景带空格词未被正确识别");
+                    return false;
+                }
 
                 Console.WriteLine("  通过 ✓");
                 return true;
