@@ -1,6 +1,6 @@
 jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的.NET版本（C#实现），支持AOT编译。
 
-当前版本为1.1.6 LTS，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式（如须使用paddle模式，请见https://github.com/sdcb/PaddleSharp/blob/master/docs%2Fpaddlenlp-lac.md ）。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
+当前版本为1.1.7，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式（如须使用paddle模式，请见https://github.com/sdcb/PaddleSharp/blob/master/docs%2Fpaddlenlp-lac.md ）。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
 
 此外，也提供了 `KeywordProcessor`，参考 [FlashText](https://github.com/vi3k6i5/flashtext) 实现。`KeywordProcessor` 可以更灵活地从文本中提取**词典中的关键词**，比如忽略大小写、含空格的词等。
 
@@ -27,6 +27,7 @@ jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的
 * 支持含Emoji句子断句
 * 支持带变体选择符和ZWJ的复杂emoji断句（甚至支持到Unicode 16的emoji）
 * 支持开启或关闭实体保护，以便OpenCC.NET调用
+* 支持带空格的词（比如Kimi K2.5）
 * 全面支持GB18030-2022级别3及一号修改单要求（基本区到扩展I区汉字、〇及康熙部首处理能力）
 * 可AOT编译，纯CPU可流畅运行
 * 内置正则超时熔断保护，可防ReDos攻击
@@ -465,7 +466,9 @@ AOT情形下含Emoji句子断句测试
 * 开发者可以指定自定义的词典，以便包含jieba词库里没有的词。虽然jieba有新词识别能力，但是自行添加新词可以保证更高的正确率
 * `JiebaSegmenter.LoadUserDict("user_dict_file_path")`
 * 词典格式与主词典格式相同，即一行包含：词、词频（可省略）、词性（可省略），用空格隔开
+* 仅不带空格的词可以省略词频与词性
 * 词频省略时，分词器将使用自动计算出的词频保证该词被分出
+* 注意：若词为带空格的词（比如Kimi K2.5），词频和词性不能省略。
 
 如
 
@@ -475,6 +478,7 @@ AOT情形下含Emoji句子断句测试
 凱特琳 nz
 台中
 机器学习 3
+Kimi K2.5 3000 nz
 ```
 
 #### 调整词典
