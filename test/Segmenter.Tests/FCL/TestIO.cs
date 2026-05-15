@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -68,8 +68,22 @@ namespace JiebaNet.Segmenter.Tests.FCL
                     continue;
                 }
 
-                var word = tokens[0];
-                var freq = int.Parse(tokens[1]);
+                string word;
+                int freq;
+
+                // 支持带空格词：倒数第二个元素为频数
+                if (tokens.Length >= 3 && int.TryParse(tokens[tokens.Length - 2], out freq))
+                {
+                    word = string.Join(" ", tokens, 0, tokens.Length - 2);
+                }
+                else if (int.TryParse(tokens[1], out freq))
+                {
+                    word = tokens[0];
+                }
+                else
+                {
+                    continue;
+                }
 
                 foreach (var ch in Enumerable.Range(0, word.Length))
                 {
@@ -97,8 +111,22 @@ namespace JiebaNet.Segmenter.Tests.FCL
                         continue;
                     }
 
-                    var word = tokens[0];
-                    var freq = int.Parse(tokens[1]);
+                    string word;
+                    int freq;
+
+                    // 支持带空格词：倒数第二个元素为频数
+                    if (tokens.Length >= 3 && int.TryParse(tokens[tokens.Length - 2], out freq))
+                    {
+                        word = string.Join(" ", tokens, 0, tokens.Length - 2);
+                    }
+                    else if (int.TryParse(tokens[1], out freq))
+                    {
+                        word = tokens[0];
+                    }
+                    else
+                    {
+                        continue;
+                    }
 
                     foreach (var ch in Enumerable.Range(0, word.Length))
                     {

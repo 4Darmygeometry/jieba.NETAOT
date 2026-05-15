@@ -229,7 +229,7 @@ namespace JiebaNet.Segmenter.Tests
 
             s = "Steve Jobs重新定义了手机";
             segments = seg.Cut(s).ToList();
-            Assert.That(segments,   Has.No.Member("Steve Jobs"));
+            Assert.That(segments, Contains.Item("Steve Jobs"));
         }
 
         [TestCase]
