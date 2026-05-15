@@ -349111,3 +349111,18 @@ github 3000 nz
 半𮱻 3000 nz
 日本新字体 3 nz
 𩽾𩾌 3000 nz
+大语言 3000 nz
+多模态 3000 nz
+老电脑 3000 nz
+旧电脑 3000 nz
+Kimi K2 1000 nz
+Kimi K2.5 3000 nz
+Kimi K2.6 3000 nz
+DeepSeek V3 1000 nz
+DeepSeek V3.1 3000 nz
+DeepSeek V3.2 3000 nz
+DeepSeek V4 Flash 3000 nz
+DeepSeek V4 Pro 3000 nz
+GLM 5.1 3000 nz
+GLM 5 1000 nz
+GLM 5V Turbo 3000 nz

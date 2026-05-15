@@ -1,4 +1,4 @@
-﻿﻿// 所有框架都使用正则表达式识别日期时间
+﻿﻿﻿// 所有框架都使用正则表达式识别日期时间
 
 using System;
 using System.Collections.Generic;
@@ -386,6 +386,43 @@ namespace JiebaNet.Segmenter
             @"(?<![a-zA-Z0-9])[a-zA-Z0-9]{2,}(?:[-_][a-zA-Z0-9]{2,})+(?![a-zA-Z0-9])",
             RegexOptions.Compiled, RegexDefaults.MatchTimeout);
 
+        // ========== 22. Windows版本识别 ==========
+        // 匹配Windows版本字符串，支持四种前缀变体（大小写不敏感）
+        // 前缀：Windows、Microsoft Windows、Microsoft(R) Windows(R)、Microsoft® Windows®、Win
+        // 支持标准带空格形式（Windows 7）、不带空格形式（Windows7）、Win缩写（Win 7、Win7）
+        // 支持早期中文译名（视窗95、视窗98、视窗2000、视窗7、视窗10，可带空格）
+        // 排除Win32/Win64
+        // Windows 11/Server 2022及之前版本使用查表匹配，之后版本使用宽松匹配
+        private static readonly Regex WindowsRegex = new(
+            @"(?i)(?:" +
+            // 四种前缀变体（大小写不敏感）
+            @"(?:Microsoft\s*\(R\)\s*Windows\s*\(R\)|Microsoft®\s*Windows®|Microsoft\s+Windows|Windows|Win)\s*" +
+            // 排除Win32/Win64
+            @"(?!32|64)" +
+            // 版本号部分
+            @"(?:" +
+                // 查表匹配：Server系列（长模式优先，避免短模式抢先匹配）
+                @"Server 2008 R2|Server 2012 R2|Server 2003|Server 2008|Server 2012|" +
+                @"Server 2016|Server 2019|Server 2022|" +
+                @"Home Server 2011|Home Server|" +
+                // 查表匹配：非Server系列（长模式优先）
+                @"For Workgroups 3\.11|For Workgroups 3\.1|" +
+                @"NT 3\.51|NT 3\.5|NT 3\.1|NT 4\.0|" +
+                @"95 OSR 2\.5|95 OSR 2|95 OSR2\.5|95 OSR2|95|" +
+                @"98 SE|98|" +
+                @"8\.1|8|" +
+                @"1\.0|2\.0|2\.1|3\.0|3\.1|3\.2|" +
+                @"2000|Me|XP|Fundamentals for Legacy PCs|Longhorn|Vista|" +
+                @"7|10|11" +
+                @"|" +
+                // 宽松匹配：Windows 11/Server 2022之后版本
+                @"Server\s*\d{4}|\d+" +
+            @")" +
+            // 中文译名（可带空格）
+            @"|视窗\s*(?:95|98|Me|NT|2000|XP|Vista|7|8|10|11)" +
+            @")",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase, RegexDefaults.MatchTimeout);
+
         // 优先级数组（按优先级从高到低排列）
         // 相对时间组合（如"明天下午3点"）优先级高于单独的时间（如"下午3点"）
         // 时间格式优先级高于比值格式，确保"14:30"被识别为时间而非比值
@@ -411,6 +448,7 @@ namespace JiebaNet.Segmenter
             (TimezoneRegex, "timezone", 25),
             (AnniversaryRegex, "anniversary", 20),
             (PercentageRegex, "percentage", 18),
+            (WindowsRegex, "windows", 17),
             (VersionRegex, "version", 15),
             (DomainRegex, "domain", 10),
             (HyphenatedWordRegex, "hyphenated", 5),

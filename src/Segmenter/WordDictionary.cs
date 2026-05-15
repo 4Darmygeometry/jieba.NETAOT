@@ -36,6 +36,11 @@ namespace JiebaNet.Segmenter
         private readonly ConcurrentDictionary<int, string> _stringPool = new ConcurrentDictionary<int, string>();
 
         /// <summary>
+        /// 带空格词集合，用于快速查找文本中的带空格词典词
+        /// </summary>
+        internal readonly ConcurrentDictionary<string, byte> SpaceContainingWords = new ConcurrentDictionary<string, byte>();
+
+        /// <summary>
         /// total occurrence of all words.
         /// </summary>
         public double Total { get; set; }
@@ -334,6 +339,8 @@ namespace JiebaNet.Segmenter
 
         /// <summary>
         /// 处理词典行（提取公共逻辑）
+        /// 支持带空格词：倒数第二个元素为HMM发射频数，倒数第一个元素为词性
+        /// 格式：word freq 或 word freq tag 或 word with spaces freq tag
         /// </summary>
         private void ProcessDictLine(string line)
         {
@@ -343,14 +350,38 @@ namespace JiebaNet.Segmenter
                 return;
             }
 
-            var word = tokens[0];
-            if (!int.TryParse(tokens[1], out var freq))
+            string word;
+            int freq;
+
+            // 支持带空格词：tokens.Length >= 3且倒数第二个元素为有效整数时
+            // 格式：word_with_spaces freq tag 或 word freq tag
+            if (tokens.Length >= 3 && int.TryParse(tokens[tokens.Length - 2], out freq))
+            {
+                word = string.Join(" ", tokens, 0, tokens.Length - 2);
+            }
+            else if (int.TryParse(tokens[1], out freq))
+            {
+                // 传统格式：word freq
+                word = tokens[0];
+            }
+            else
+            {
+                return;
+            }
+
+            if (string.IsNullOrEmpty(word))
             {
                 return;
             }
 
             Trie[word] = freq;
             AddToTotal(freq);
+
+            // 记录带空格词，用于分词时整体保护
+            if (word.Contains(' '))
+            {
+                SpaceContainingWords.TryAdd(word, 0);
+            }
 
             // 并行构建前缀（使用Span优化）
             var wordSpan = word.AsSpan();
@@ -426,9 +457,44 @@ namespace JiebaNet.Segmenter
 
         #endregion
 
+        /// <summary>
+        /// 检查字符串是否包含ASCII字母（用于判断是否需要大小写不敏感回退）
+        /// </summary>
+        private static bool HasAsciiLetter(string word)
+        {
+            foreach (char c in word)
+            {
+                if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 检查ReadOnlySpan是否包含ASCII字母
+        /// </summary>
+        private static bool HasAsciiLetter(ReadOnlySpan<char> word)
+        {
+            foreach (char c in word)
+            {
+                if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+                    return true;
+            }
+            return false;
+        }
+
         public bool ContainsWord(string word)
         {
-            return Trie.TryGetValue(word, out var freq) && freq > 0;
+            if (Trie.TryGetValue(word, out var freq) && freq > 0)
+                return true;
+            // 大小写不敏感回退：仅当词中包含ASCII字母时才尝试
+            if (HasAsciiLetter(word))
+            {
+                var upper = word.ToUpperInvariant();
+                if (upper != word)
+                    return Trie.TryGetValue(upper, out freq) && freq > 0;
+            }
+            return false;
         }
 
         /// <summary>
@@ -437,15 +503,30 @@ namespace JiebaNet.Segmenter
         public bool ContainsWord(ReadOnlySpan<char> word)
         {
             var key = GetOrCreateString(word);
-            return Trie.TryGetValue(key, out var freq) && freq > 0;
+            if (Trie.TryGetValue(key, out var freq) && freq > 0)
+                return true;
+            // 大小写不敏感回退
+            if (HasAsciiLetter(word))
+            {
+                var upper = key.ToUpperInvariant();
+                if (upper != key)
+                    return Trie.TryGetValue(upper, out freq) && freq > 0;
+            }
+            return false;
         }
 
         public int GetFreqOrDefault(string key)
         {
-            if (ContainsWord(key))
-                return Trie[key];
-            else
-                return 1;
+            if (Trie.TryGetValue(key, out var freq) && freq > 0)
+                return freq;
+            // 大小写不敏感回退
+            if (HasAsciiLetter(key))
+            {
+                var upper = key.ToUpperInvariant();
+                if (upper != key && Trie.TryGetValue(upper, out freq) && freq > 0)
+                    return freq;
+            }
+            return 1;
         }
 
         /// <summary>
@@ -456,6 +537,13 @@ namespace JiebaNet.Segmenter
             var str = GetOrCreateString(key);
             if (Trie.TryGetValue(str, out var freq) && freq > 0)
                 return freq;
+            // 大小写不敏感回退
+            if (HasAsciiLetter(key))
+            {
+                var upper = str.ToUpperInvariant();
+                if (upper != str && Trie.TryGetValue(upper, out freq) && freq > 0)
+                    return freq;
+            }
             return 1;
         }
 
@@ -466,7 +554,16 @@ namespace JiebaNet.Segmenter
         public bool ContainsPrefix(ReadOnlySpan<char> prefix)
         {
             var key = GetOrCreateString(prefix);
-            return Trie.ContainsKey(key);
+            if (Trie.ContainsKey(key))
+                return true;
+            // 大小写不敏感回退
+            if (HasAsciiLetter(prefix))
+            {
+                var upper = key.ToUpperInvariant();
+                if (upper != key)
+                    return Trie.ContainsKey(upper);
+            }
+            return false;
         }
 
         /// <summary>
@@ -475,7 +572,16 @@ namespace JiebaNet.Segmenter
         public int GetTrieValue(ReadOnlySpan<char> key)
         {
             var str = GetOrCreateString(key);
-            return Trie.TryGetValue(str, out var value) ? value : -1;
+            if (Trie.TryGetValue(str, out var value))
+                return value;
+            // 大小写不敏感回退
+            if (HasAsciiLetter(key))
+            {
+                var upper = str.ToUpperInvariant();
+                if (upper != str && Trie.TryGetValue(upper, out value))
+                    return value;
+            }
+            return -1;
         }
 
         /// <summary>
@@ -505,6 +611,13 @@ namespace JiebaNet.Segmenter
 
             Trie[word] = freq;
             AddToTotal(freq);
+
+            // 记录带空格词
+            if (word.Contains(' '))
+            {
+                SpaceContainingWords.TryAdd(word, 0);
+            }
+
             for (var i = 0; i < word.Length; i++)
             {
                 var wfrag = word.Substring(0, i + 1);

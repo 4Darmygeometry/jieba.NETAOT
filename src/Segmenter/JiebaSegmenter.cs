@@ -167,17 +167,78 @@ namespace JiebaNet.Segmenter
             // 识别日期时间实体
             var timeEntities = TimeRecognizer.Value.Recognize(text);
 
-            if (timeEntities.Count == 0)
+            // 查找文本中的带空格词典词
+            var dictWordEntities = FindSpaceContainingWords(text);
+
+            // 合并所有受保护区域（词典词优先，去除重叠）
+            var allEntities = MergeEntities(timeEntities, dictWordEntities);
+
+            if (allEntities.Count == 0)
             {
-                // 没有日期时间实体，使用普通分词
+                // 没有实体，使用普通分词
                 var reHan = RegexChineseDefault;
                 var reSkip = RegexSkipDefault;
                 var cutMethod = hmm ? CutDag : (Func<string, IEnumerable<string>>)CutDagWithoutHmm;
                 return CutIt(text, cutMethod, reHan, reSkip, false);
             }
 
-            // 有日期时间实体，需要保护这些区域不被分词
-            return CutWithProtectedRegions(text, timeEntities, hmm);
+            // 有实体，需要保护这些区域不被分词
+            return CutWithProtectedRegions(text, allEntities, hmm);
+        }
+
+        /// <summary>
+        /// 查找文本中出现的所有带空格词典词
+        /// </summary>
+        private List<TimeEntity> FindSpaceContainingWords(string text)
+        {
+            var result = new List<TimeEntity>();
+            foreach (var kvp in CurrentWordDict.SpaceContainingWords)
+            {
+                var word = kvp.Key;
+                var idx = text.IndexOf(word, StringComparison.OrdinalIgnoreCase);
+                while (idx >= 0)
+                {
+                    result.Add(new TimeEntity(text.Substring(idx, word.Length), idx, idx + word.Length, "dict_word"));
+                    idx = text.IndexOf(word, idx + 1, StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            // 按位置排序
+            result.Sort((a, b) => a.Start.CompareTo(b.Start));
+            return result;
+        }
+
+        /// <summary>
+        /// 合并时间实体和词典词实体，去除重叠区域（词典词优先，同类型时保留更长匹配）
+        /// </summary>
+        private static List<TimeEntity> MergeEntities(List<TimeEntity> timeEntities, List<TimeEntity> dictWordEntities)
+        {
+            if (dictWordEntities.Count == 0)
+                return timeEntities;
+
+            var result = new List<TimeEntity>();
+            var allEntities = new List<TimeEntity>();
+            allEntities.AddRange(dictWordEntities);
+            allEntities.AddRange(timeEntities);
+            // 按起始位置排序，起始相同时按长度降序（长的优先）
+            allEntities.Sort((a, b) =>
+            {
+                var cmp = a.Start.CompareTo(b.Start);
+                if (cmp != 0) return cmp;
+                return b.End.CompareTo(a.End);
+            });
+
+            var lastEnd = 0;
+            foreach (var entity in allEntities)
+            {
+                if (entity.Start >= lastEnd)
+                {
+                    result.Add(entity);
+                    lastEnd = entity.End;
+                }
+                // 如果重叠，跳过（更长的实体已排在前面，优先保留）
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -586,57 +647,66 @@ namespace JiebaNet.Segmenter
                 }
                 else
                 {
-                    var tmp = reSkip.Split(blk);
-                    foreach (var x in tmp)
+                    // 精确模式下，检查整个非中文块是否是词典中的带空格词，若是则作为整体保留
+                    // 全模式下不保护，让reSkip按分隔符正常拆分
+                    if (!cutAll && CurrentWordDict.ContainsWord(blk))
                     {
-                        if (reSkip.IsMatch(x))
+                        result.Add(blk);
+                    }
+                    else
+                    {
+                        var tmp = reSkip.Split(blk);
+                        foreach (var x in tmp)
                         {
-                            result.Add(x);
-                        }
-                        else if (!cutAll)
-                        {
-                            // 优先使用emoji词典匹配复杂emoji
-                            // 如果匹配到emoji词典中的词，直接作为一个整体
-                            // 否则使用Grapheme Cluster分割
-                            var i = 0;
-                            while (i < x.Length)
+                            if (reSkip.IsMatch(x))
                             {
-                                // 尝试匹配emoji词典
-                                var emojiLen = CurrentWordDict.MatchEmoji(x, i);
-                                if (emojiLen > 0)
+                                result.Add(x);
+                            }
+                            else if (!cutAll)
+                            {
+                                // 优先使用emoji词典匹配复杂emoji
+                                // 如果匹配到emoji词典中的词，直接作为一个整体
+                                // 否则使用Grapheme Cluster分割
+                                var i = 0;
+                                while (i < x.Length)
                                 {
-                                    // 扩展匹配以包含紧跟的变体选择符，确保不拆散字形簇
-                                    // 例如：❤（U+2764）匹配后，若紧跟️（U+FE0F）则一并包含
-                                    while (i + emojiLen < x.Length &&
-                                           (x[i + emojiLen] == '\uFE0F' || x[i + emojiLen] == '\uFE0E'))
+                                    // 尝试匹配emoji词典
+                                    var emojiLen = CurrentWordDict.MatchEmoji(x, i);
+                                    if (emojiLen > 0)
                                     {
-                                        emojiLen++;
-                                    }
-                                    result.Add(x.Substring(i, emojiLen));
-                                    i += emojiLen;
-                                }
-                                else
-                                {
-                                    // 没有匹配到emoji，使用Grapheme Cluster分割
-                                    // 找到下一个可能的emoji开始位置
-                                    var graphemes = RuneHelper.SplitToGraphemes(x.Substring(i));
-                                    if (graphemes.Count > 0)
-                                    {
-                                        result.Add(graphemes[0]);
-                                        i += graphemes[0].Length;
+                                        // 扩展匹配以包含紧跟的变体选择符，确保不拆散字形簇
+                                        // 例如：❤（U+2764）匹配后，若紧跟️（U+FE0F）则一并包含
+                                        while (i + emojiLen < x.Length &&
+                                               (x[i + emojiLen] == '\uFE0F' || x[i + emojiLen] == '\uFE0E'))
+                                        {
+                                            emojiLen++;
+                                        }
+                                        result.Add(x.Substring(i, emojiLen));
+                                        i += emojiLen;
                                     }
                                     else
                                     {
-                                        // 兜底：单字符
-                                        result.Add(x[i].ToString());
-                                        i++;
+                                        // 没有匹配到emoji，使用Grapheme Cluster分割
+                                        // 找到下一个可能的emoji开始位置
+                                        var graphemes = RuneHelper.SplitToGraphemes(x.Substring(i));
+                                        if (graphemes.Count > 0)
+                                        {
+                                            result.Add(graphemes[0]);
+                                            i += graphemes[0].Length;
+                                        }
+                                        else
+                                        {
+                                            // 兜底：单字符
+                                            result.Add(x[i].ToString());
+                                            i++;
+                                        }
                                     }
                                 }
                             }
-                        }
-                        else
-                        {
-                            result.Add(x);
+                            else
+                            {
+                                result.Add(x);
+                            }
                         }
                     }
                 }
