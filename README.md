@@ -114,6 +114,7 @@ var asyncSegmenter = await JiebaSegmenter.CreateAsync();
 代码示例
 
 ```c#
+using JiebaNet.Segmenter;
 var segmenter = new JiebaSegmenter();
 var segments = segmenter.Cut("我来到北京清华大学", cutAll: true);
 Console.WriteLine("【全模式】：{0}", string.Join("/ ", segments));
