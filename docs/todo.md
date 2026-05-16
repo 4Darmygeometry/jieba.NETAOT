@@ -3,9 +3,7 @@
 
 Misc
 
-1. multiple english words (e.g. Steve Jobs)
-2. named entity recognition
-3. new word recognition
-4. Pinyin
-5. Simplified <-> Traditional
+1. new word recognition
+2. Pinyin
+3. Simplified <-> Traditional(Do by OpenCC)
 
