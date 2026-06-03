@@ -1,4 +1,4 @@
-﻿﻿﻿// 所有框架都使用正则表达式识别日期时间
+﻿﻿// 所有框架都使用正则表达式识别日期时间
 
 using System;
 using System.Collections.Generic;
@@ -73,6 +73,7 @@ namespace JiebaNet.Segmenter
         private const string C_华 = "华華";
         private const string C_寿 = "寿壽";
         private const string C_财 = "财財";
+        private const string C_视 = "视視";
         // ========== 简繁通用词语（使用|分隔，直接用于正则） ==========
         private const string C_惊蛰 = "惊蛰|驚蟄";
         private const string C_软件 = "软件|軟體";
@@ -419,7 +420,7 @@ namespace JiebaNet.Segmenter
                 @"Server\s*\d{4}|\d+" +
             @")" +
             // 中文译名（可带空格）
-            @"|视窗\s*(?:95|98|Me|NT|2000|XP|Vista|7|8|10|11)" +
+            @"|[" + C_视 + @"]窗\s*(?:95|98|Me|NT|2000|XP|Vista|7|8|10|11)" +
             @")",
             RegexOptions.Compiled | RegexOptions.IgnoreCase, RegexDefaults.MatchTimeout);
 

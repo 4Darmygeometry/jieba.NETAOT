@@ -31,6 +31,27 @@ namespace JiebaNet.Segmenter.Common
                 elements.Add(enumerator.GetTextElement());
             }
 
+            // .NET Framework 4.8的StringInfo不会将区域指示符对（Regional Indicator Pair，国旗）合并
+            // .NET 10的StringInfo支持UAX #29，但需要在所有目标框架上保持一致
+            // 这里做一次额外的合并：将连续两个区域指示符合并为一个字形簇
+            var merged = new List<string>(elements.Count);
+            for (var idx = 0; idx < elements.Count; idx++)
+            {
+                var elem = elements[idx];
+                if (merged.Count > 0
+                    && IsRegionalIndicator(merged[merged.Count - 1])
+                    && IsRegionalIndicator(elem))
+                {
+                    // 合并区域指示符对（国旗）
+                    merged[merged.Count - 1] += elem;
+                }
+                else
+                {
+                    merged.Add(elem);
+                }
+            }
+            elements = merged;
+
                 // .NET Framework 4.8的StringInfo会将ZWJ序列拆开
                 // 需要将ZWJ（U+200D）与前后的emoji元素合并为单个字形簇
                 // 使用IsEmojiGrapheme共用逻辑判断emoji基础字符
@@ -185,6 +206,24 @@ namespace JiebaNet.Segmenter.Common
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// 检查字符串是否为单个区域指示符（Regional Indicator）
+        /// 区域指示符范围：U+1F1E6 - U+1F1FF（26个字母的旗帜）
+        /// 用于合并连续的两个区域指示符成为国旗字形簇
+        /// </summary>
+        internal static bool IsRegionalIndicator(string s)
+        {
+            if (string.IsNullOrEmpty(s) || s.Length != 2)
+                return false;
+
+            // 必须是一个完整的代理对（区域指示符都在辅助平面）
+            if (!char.IsSurrogatePair(s[0], s[1]))
+                return false;
+
+            int value = char.ConvertToUtf32(s[0], s[1]);
+            return value >= 0x1F1E6 && value <= 0x1F1FF;
         }
 
         /// <summary>

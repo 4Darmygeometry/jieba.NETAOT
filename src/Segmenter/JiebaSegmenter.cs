@@ -664,43 +664,15 @@ namespace JiebaNet.Segmenter
                             }
                             else if (!cutAll)
                             {
-                                // 优先使用emoji词典匹配复杂emoji
-                                // 如果匹配到emoji词典中的词，直接作为一个整体
-                                // 否则使用Grapheme Cluster分割
-                                var i = 0;
-                                while (i < x.Length)
+                                // 使用Grapheme Cluster分割作为主导机制，避免字典中的单字符emoji误拆完整字形簇
+                                // 例如：👋（字典中有） + 🏽（字典中也有）会被字典分别匹配成"👋╱🏽"
+                                // 而Grapheme Cluster能正确识别为单个"👋🏽"字形簇
+                                // 字典匹配仅作为已知完整emoji的快速识别（例如 👨‍⚕️、🇨🇳）
+                                // 字典的词频信息主要服务于TF-IDF/TextRank等关键词提取场景
+                                var graphemes = RuneHelper.SplitToGraphemes(x);
+                                if (graphemes.Count > 0)
                                 {
-                                    // 尝试匹配emoji词典
-                                    var emojiLen = CurrentWordDict.MatchEmoji(x, i);
-                                    if (emojiLen > 0)
-                                    {
-                                        // 扩展匹配以包含紧跟的变体选择符，确保不拆散字形簇
-                                        // 例如：❤（U+2764）匹配后，若紧跟️（U+FE0F）则一并包含
-                                        while (i + emojiLen < x.Length &&
-                                               (x[i + emojiLen] == '\uFE0F' || x[i + emojiLen] == '\uFE0E'))
-                                        {
-                                            emojiLen++;
-                                        }
-                                        result.Add(x.Substring(i, emojiLen));
-                                        i += emojiLen;
-                                    }
-                                    else
-                                    {
-                                        // 没有匹配到emoji，使用Grapheme Cluster分割
-                                        // 找到下一个可能的emoji开始位置
-                                        var graphemes = RuneHelper.SplitToGraphemes(x.Substring(i));
-                                        if (graphemes.Count > 0)
-                                        {
-                                            result.Add(graphemes[0]);
-                                            i += graphemes[0].Length;
-                                        }
-                                        else
-                                        {
-                                            // 兜底：单字符
-                                            result.Add(x[i].ToString());
-                                            i++;
-                                        }
-                                    }
+                                    result.AddRange(graphemes);
                                 }
                             }
                             else
