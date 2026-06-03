@@ -395,6 +395,25 @@ namespace JiebaNet.NetFrameworkTest
                 var flagJoined = string.Join("╱", flagResult);
                 Console.WriteLine($"  国旗emoji: {flagText} -> {flagJoined}");
 
+                // 测试国旗消歧：18x 🇳🇨 + 18x 🇨🇳 + 6x 🇨🇨
+                // 🇳🇨、🇨🇨不在emoji字典中，验证Grapheme Cluster分割能正确识别区域指示符对
+                var flagDisambigText = "🇨🇳🇨🇳🇨🇳🇨🇳🇨🇳🇨🇳🇨🇨🇳🇨🇳🇨🇳🇨🇳🇨🇨🇨🇨🇨🇨🇨🇳🇨🇳🇨🇳🇨🇨🇳🇨🇨🇳🇨🇳🇨🇳🇨🇳🇨🇳🇨🇳🇨🇳🇨🇨🇳🇨🇳🇨🇳🇨🇨🇳🇨🇳🇨🇳🇨🇳🇨🇨🇳🇨🇳🇨🇳🇨🇳🇨🇳🇨🇳🇨🇳🇨🇳";
+                var flagDisambigResult = segmenter.Cut(flagDisambigText).ToList();
+                var flagDisambigJoined = string.Join("╱", flagDisambigResult);
+                Console.WriteLine($"原始文本: {flagDisambigText} 分词结果:{flagDisambigJoined}");
+                Console.WriteLine($"  国旗消歧(18x🇳🇨+18x🇨🇳+6x🇨🇨): 长度={flagDisambigResult.Count}, 期望=42");
+                var ncCount = flagDisambigResult.Count(s => s == "🇳🇨");
+                var cnCount = flagDisambigResult.Count(s => s == "🇨🇳");
+                var ccCount = flagDisambigResult.Count(s => s == "🇨🇨");
+                Console.WriteLine($"  🇳🇨: {ncCount} (期望18), 🇨🇳: {cnCount} (期望18), 🇨🇨: {ccCount} (期望6)");
+
+                // 测试肤色emoji不被拆分：👋🏽👉🏿👉🏾👉🏽👉🏼👉🏻
+                // 验证带肤色修饰符的完整emoji被识别为单个字形簇
+                var skinEmojiText = "👋🏽👉🏿👉🏾👉🏽👉🏼👉🏻";
+                var skinEmojiResult = segmenter.Cut(skinEmojiText).ToList();
+                var skinEmojiJoined = string.Join("╱", skinEmojiResult);
+                Console.WriteLine($"  肤色emoji序列: 长度={skinEmojiResult.Count}, 期望=6 -> {skinEmojiJoined}");
+
                 // 检查复杂emoji是否被完整保留
                 var allPassed = true;
 
@@ -424,6 +443,31 @@ namespace JiebaNet.NetFrameworkTest
                 {
                     Console.WriteLine("  警告: 国旗emoji未被完整保留");
                     allPassed = false;
+                }
+
+                // 国旗消歧：18x 🇳🇨 + 18x 🇨🇳 + 6x 🇨🇨 = 42个独立国旗emoji
+                if (flagDisambigResult.Count != 42 || ncCount != 18 || cnCount != 18 || ccCount != 6)
+                {
+                    Console.WriteLine("  警告: 国旗消歧失败，区域指示符对未被正确合并");
+                    allPassed = false;
+                }
+
+                // 肤色emoji序列：6个独立肤色emoji（每对=1个）
+                if (skinEmojiResult.Count != 6)
+                {
+                    Console.WriteLine("  警告: 肤色emoji被拆分，应为6个完整字形簇");
+                    allPassed = false;
+                }
+
+                // 验证肤色emoji序列中每个都是完整的字形簇（长度4字符）
+                foreach (var s in skinEmojiResult)
+                {
+                    if (s.Length != 4)
+                    {
+                        Console.WriteLine($"  警告: 肤色emoji被拆分为非完整字形簇: [{s}] (len={s.Length})");
+                        allPassed = false;
+                        break;
+                    }
                 }
 
                 if (allPassed)

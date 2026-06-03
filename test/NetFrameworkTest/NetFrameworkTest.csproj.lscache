@@ -1,0 +1,96 @@
+version=1
+
+# This file caches language service data to improve the performance of C# Dev Kit.
+# It is not intended for manual editing. It can safely be deleted and will be
+# regenerated automatically. For more information, see https://aka.ms/lscache
+#
+# To control where cache files are stored, use the following VS Code setting:
+#   "dotnet.projectsystem.cacheInProjectFolder": true
+
+[project]
+language=C#
+primary
+lastDtbSucceeded
+
+[properties]
+AssemblyName=JiebaNet.NetFrameworkTest
+CommandLineArgsForDesignTimeEvaluation=-langversion:latest -define:TRACE;AOTBA
+CompilerGeneratedFilesOutputPath=
+MaxSupportedLangVersion=7.3
+ProjectAssetsFile=<PATH>obj/project.assets.json
+RootNamespace=JiebaNet.NetFrameworkTest
+RunAnalyzers=
+RunAnalyzersDuringLiveAnalysis=
+SolutionPath=<PATH>../../jieba.NET.slnx
+TargetFrameworkIdentifier=.NETFramework
+TargetPath=<PATH>bin/Debug/net48/JiebaNet.NetFrameworkTest.exe
+TargetRefPath=
+TemporaryDependencyNodeTargetIdentifier=net48
+
+[commandLineArguments]
+/noconfig
+/unsafe-
+/checked-
+/nowarn:1701,1702,1701,1702
+/fullpaths
+/nostdlib+
+/platform:x64
+/errorreport:prompt
+/warn:4
+/define:TRACE;AOTBA;DEBUG;NETFRAMEWORK;NET48;NET20_OR_GREATER;NET30_OR_GREATER;NET35_OR_GREATER;NET40_OR_GREATER;NET45_OR_GREATER;NET451_OR_GREATER;NET452_OR_GREATER;NET46_OR_GREATER;NET461_OR_GREATER;NET462_OR_GREATER;NET47_OR_GREATER;NET471_OR_GREATER;NET472_OR_GREATER;NET48_OR_GREATER
+/highentropyva+
+/nullable:enable
+/debug+
+/debug:portable
+/filealign:512
+/optimize-
+/out:obj\Debug\net48\JiebaNet.NetFrameworkTest.exe
+/subsystemversion:6.00
+/target:exe
+/warnaserror-
+/utf8output
+/deterministic+
+/langversion:latest
+/warnaserror+:NU1605
+
+[sourceFiles]
+obj/Debug/net48/
+ .NETFramework,Version=v4.8.AssemblyAttributes.cs
+ NetFrameworkTest.AssemblyInfo.cs
+Program.cs
+
+[metadataReferences]
+../../../../../NuGetPackages/
+ microsoft.bcl.asyncinterfaces/10.0.6/lib/net462/Microsoft.Bcl.AsyncInterfaces.dll
+ microsoft.bcl.hashcode/6.0.0/lib/net462/Microsoft.Bcl.HashCode.dll
+ shim.system.text.rune/6.0.2/lib/netstandard2.0/Shim.System.Text.Rune.dll
+ system.buffers/4.6.1/lib/net462/System.Buffers.dll
+ system.io.pipelines/10.0.6/lib/net462/System.IO.Pipelines.dll
+ system.memory/4.6.3/lib/net462/System.Memory.dll
+ system.numerics.vectors/4.6.1/lib/net462/System.Numerics.Vectors.dll
+ system.runtime.compilerservices.unsafe/6.1.2/lib/net462/System.Runtime.CompilerServices.Unsafe.dll
+ system.text.encodings.web/10.0.6/lib/net462/System.Text.Encodings.Web.dll
+ system.text.json/10.0.6/lib/net462/System.Text.Json.dll
+ system.threading.tasks.extensions/4.6.3/lib/net462/System.Threading.Tasks.Extensions.dll
+ system.valuetuple/4.6.2/lib/net47/System.ValueTuple.dll
+../../src/
+ Analyser/bin/Debug/net48/JiebaNet.Analyser.dll
+ Segmenter/bin/Debug/net48/JiebaNet.Segmenter.dll
+<NETFXREF>/v4.8/
+ Facades/netstandard.dll
+ mscorlib.dll
+ System.Core.dll
+ System.Data.dll
+ System.dll
+ System.Drawing.dll
+ System.IO.Compression.FileSystem.dll
+ System.Numerics.dll
+ System.Runtime.Serialization.dll
+ System.Xml.dll
+ System.Xml.Linq.dll
+
+[analyzerReferences]
+../../../../../NuGetPackages/system.text.json/10.0.6/analyzers/dotnet/roslyn4.4/cs/System.Text.Json.SourceGeneration.dll
+
+[analyzerConfigFiles]
+obj/Debug/net48/NetFrameworkTest.GeneratedMSBuildEditorConfig.editorconfig
