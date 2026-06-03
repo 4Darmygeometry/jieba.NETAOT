@@ -1,6 +1,6 @@
 jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的.NET版本（C#实现），支持AOT编译。
 
-当前版本为1.1.7，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式（如须使用paddle模式，请见https://github.com/sdcb/PaddleSharp/blob/master/docs%2Fpaddlenlp-lac.md ）。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
+当前版本为1.1.8 LTS，基于jieba 0.42，提供与jieba**基本一致**的功能与接口，但不支持其最新的paddle模式（如须使用paddle模式，请见https://github.com/sdcb/PaddleSharp/blob/master/docs%2Fpaddlenlp-lac.md ）。关于jieba的实现思路，可以看看[这篇wiki](https://github.com/anderscui/jieba.NET/wiki/%E7%90%86%E8%A7%A3%E7%BB%93%E5%B7%B4%E5%88%86%E8%AF%8D)里提到的资料。
 
 此外，也提供了 `KeywordProcessor`，参考 [FlashText](https://github.com/vi3k6i5/flashtext) 实现。`KeywordProcessor` 可以更灵活地从文本中提取**词典中的关键词**，比如忽略大小写、含空格的词等。
 
@@ -24,8 +24,8 @@ jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的
 * 支持TF-IDF、TextRank、KeywordProcessor算法关键词提取
 * Counter词频统计支持统计emoji与过滤emoji两种模式，适合不同类型的词云图制作
 * 支持日期、时间、链接、版本号等实体提取
-* 支持含Emoji句子断句
-* 支持带变体选择符和ZWJ的复杂emoji断句（甚至支持到Unicode 16的emoji）
+* 支持含Emoji句子断句（带未收录emoji识别能力）
+* 支持带变体选择符、ZWJ、肤色选择符、区域选择符的复杂emoji断句（甚至支持到Unicode 16的emoji）
 * 支持开启或关闭实体保护，以便OpenCC.NET调用
 * 支持带空格的词（比如Kimi K2.5）
 * 全面支持GB18030-2022级别3及一号修改单要求（基本区到扩展I区汉字、〇及康熙部首处理能力）
@@ -192,7 +192,7 @@ AOT情形下含Emoji句子断句测试
   基础测试通过 ✓
   [扩展区汉字+Emoji+ZWJ+变体选择符混合测试]
     输入: 从𧒽岗出发去吃𰻝𰻝面，经过石𬒔，今天😀很开心😊笑死了🤣，这是👨‍👩‍👧‍👦全家福和👨‍👨‍👧家庭，我爱❤️和▶︎视频，𰻝𰻝面是陕西特色面食
-    结果: 𰻝𰻝面╱陕西╱家庭╱全家福╱面食╱特色╱𧒽岗╱出发╱视频╱石𬒔
+    结果: 𰻝𰻝面╱陕西╱全家福╱家庭╱特色╱面食╱𧒽岗╱出发╱视频╱石𬒔
     扩展区汉字: ✓
     基础Emoji: ✓（TextRank按词性过滤，emoji词性为x不在默认列表中）
     ZWJ序列: ✓（同上）
@@ -236,6 +236,10 @@ AOT情形下含Emoji句子断句测试
   变体选择符: 今天看了▶︎视频 -> 今天╱看╱了╱▶︎╱视频
   肤色修饰: 他是👨🏻‍⚕️医生 -> 他╱是╱👨🏻‍⚕️╱医生
   国旗emoji: 我爱🇨🇳中国 -> 我╱爱╱🇨🇳╱中国
+原始文本: 🇨🇳🇨🇳🇨🇳🇨🇳🇨🇳🇨🇳🇨🇨🇳🇨🇳🇨🇳🇨🇳🇨🇨🇨🇨🇨🇨🇨🇳🇨🇳🇨🇳🇨🇨🇳🇨🇨🇳🇨🇳🇨🇳🇨🇳🇨🇳🇨🇳🇨🇳🇨🇨🇳🇨🇳🇨🇳🇨🇨🇳🇨🇳🇨🇳🇨🇳🇨🇨🇳🇨🇳🇨🇳🇨🇳🇨🇳🇨🇳🇨🇳🇨🇳 分词结果:🇨🇳╱🇨🇳╱🇨🇳╱🇨🇳╱🇨🇳╱🇨🇳╱🇨🇨╱🇳🇨╱🇳🇨╱🇳🇨╱🇳🇨╱🇨🇨╱🇨🇨╱🇨🇨╱🇳🇨╱🇳🇨╱🇳🇨╱🇨🇳╱🇨🇨╱🇳🇨╱🇳🇨╱🇳🇨╱🇳🇨╱🇳🇨╱🇳🇨╱🇳🇨╱🇨🇳╱🇨🇳╱🇨🇳╱🇨🇨╱🇳🇨╱🇳🇨╱🇳🇨╱🇳🇨╱🇨🇳╱🇨🇳╱🇨🇳╱🇨🇳╱🇨🇳╱🇨🇳╱🇨🇳╱🇨🇳
+  国旗消歧(18x🇳🇨+18x🇨🇳+6x🇨🇨): 长度=42, 期望=42
+  🇳🇨: 18 (期望18), 🇨🇳: 18 (期望18), 🇨🇨: 6 (期望6)
+  肤色emoji序列: 长度=6, 期望=6 -> 👋🏽╱👉🏿╱👉🏾╱👉🏽╱👉🏼╱👉🏻
   通过 ✓
 [测试] 繁体中文分词...
   输入: 我來到北京清華大學
@@ -455,6 +459,60 @@ AOT情形下含Emoji句子断句测试
   结果: 访问╱https╱:╱/╱/╱github╱.╱com╱查看╱代码
   测试4: 我来到北京清华大学
   结果: 我╱来到╱北京╱清华大学
+  通过 ✓
+[测试] Windows版本识别分词...
+  测试1: 我使用的是Windows 10操作系统
+  结果: 我╱使用╱的╱是╱Windows 10╱操作系统
+  测试2: 我使用的是Windows7操作系统
+  结果: 我╱使用╱的╱是╱Windows7╱操作系统
+  测试3: 我使用的是Win 7操作系统
+  结果: 我╱使用╱的╱是╱Win 7╱操作系统
+  测试4: 我使用的是Win7操作系统
+  结果: 我╱使用╱的╱是╱Win7╱操作系统
+  测试5: 我使用的是Microsoft Windows 10操作系统
+  结果: 我╱使用╱的╱是╱Microsoft Windows 10╱操作系统
+  测试6: 我使用的是Microsoft(R) Windows(R) 11操作系统
+  结果: 我╱使用╱的╱是╱Microsoft(R) Windows(R) 11╱操作系统
+  测试7: 我使用的是Microsoft® Windows® 11操作系统
+  结果: 我╱使用╱的╱是╱Microsoft® Windows® 11╱操作系统
+  测试8: 服务器运行Windows Server 2022
+  结果: 服务器╱运行╱Windows Server 2022
+  测试9: 老电脑运行Windows XP系统
+  结果: 老电脑╱运行╱Windows XP╱系统
+  测试10: Windows Vista是Windows 7的前身
+  结果: Windows Vista╱是╱Windows 7╱的╱前身
+  测试11: 视窗95是早期的中文Windows版本
+  结果: 视窗95╱是╱早期╱的╱中文╱Windows╱版本
+  测试12: 视窗 10是目前最新的Windows版本
+  结果: 视窗 10╱是╱目前╱最新╱的╱Windows╱版本
+  测试13: Win32是Windows的32位API
+  结果: Win32╱是╱Windows╱的╱32╱位╱API
+  实体:
+  测试14: Win64是Windows的64位API
+  结果: Win64╱是╱Windows╱的╱64╱位╱API
+  实体:
+  测试15: 我使用的是windows 10操作系统
+  结果: 我╱使用╱的╱是╱windows 10╱操作系统
+  测试16: Windows 12预计明年发布
+  结果: Windows 12╱预计╱明年╱发布
+  测试17: Windows Server 2025是最新的服务器版本
+  结果: Windows Server 2025╱是╱最新╱的╱服务器╱版本
+  测试18: Windows 8.1是Windows 8的升级版
+  结果: Windows 8.1╱是╱Windows 8╱的╱升级版
+  测试19: Windows 2000是NT 5.0的商业名称
+  结果: Windows 2000╱是╱NT╱ ╱5.0╱的╱商业╱名称
+  测试20: Windows NT 4.0发布于1996年
+  结果: Windows NT 4.0╱发布╱于╱1996年
+  通过 ✓
+[测试] 带空格词分词...
+  测试1: Kimi K2.5是一个大语言模型
+  结果: Kimi K2.5╱是╱一个╱大语言╱模型
+  测试2: GPT 4o是OpenAI的多模态模型
+  结果: GPT 4o╱是╱OpenAI╱的╱多模态╱模型
+  测试3: Claude 3.5 Sonnet是Anthropic的模型
+  结果: Claude 3.5 Sonnet╱是╱Anthropic╱的╱模型
+  测试4: 对比Kimi K2.5和GPT 4o的性能
+  结果: 对比╱Kimi K2.5╱和╱GPT 4o╱的╱性能
   通过 ✓
 
 === 所有AOT测试通过！ ===
