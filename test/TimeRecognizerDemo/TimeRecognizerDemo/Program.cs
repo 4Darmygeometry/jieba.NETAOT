@@ -90,7 +90,7 @@ class TimeRecognizerDemo
                         "高铁票在12306.cn买的";
         var familyExpected = new[]
         {
-            ("春节", "festival"),
+            ("今年春节", "festival"),
             ("2025年1月29日", "datetimex"),
             ("腊月二十八晚上9点", "lunardate"),
             ("十九点", "time"),
@@ -230,6 +230,82 @@ class TimeRecognizerDemo
         };
         RunTest(recognizer, windowsText, windowsExpected);
 
+        // ========== 13. 词典词与时间实体识别 ==========
+        // ITimeRecognizer 是公共接口，RegexTimeRecognizer 内部已做词典词前缀/后缀过滤：
+        // - 词典词前缀/后缀被识为时间实体时会被过滤掉（如"百年孤独"中"百年"被丢弃）
+        // - 词典词整体是时间实体的仍正常识别（如"百年纪念" → anniversary）
+        // 测试词典词来自 词典词拆分问题.txt
+        Console.WriteLine("【场景十三：词典词与时间实体识别（来自 词典词拆分问题.txt）】");
+
+        // 13.1 词典词整体是时间实体 → 应正确识别
+        Console.WriteLine("\n--- 13.1 词典词中的时间实体（应正确识别）---");
+        var dictTimeWordTests = new[]
+        {
+            ("百年纪念", new[] { ("百年纪念", "anniversary") }),
+            ("百年诞辰", new[] { ("百年诞辰", "anniversary") }),
+        };
+        foreach (var (text, expected) in dictTimeWordTests)
+        {
+            RunTest(recognizer, text, expected);
+        }
+
+        // 13.2 词典词非时间实体 → 词典词前缀/后缀被识别为时间实体的部分应被过滤掉
+        // 公共接口应保证返回的实体在中文语境下确为时间实体
+        // 例如"百年孤独"中"百年"是词典词前缀，不应作为 duration 返回
+        Console.WriteLine("\n--- 13.2 词典词非时间实体（recognizer 内部已过滤前缀/后缀）---");
+        var dictNonTimeWordTests = new[]
+        {
+            ("百年孤独", Array.Empty<(string, string)>()),      // "百年"是"百年孤独"的前缀，已过滤
+            ("百年一遇", Array.Empty<(string, string)>()),      // "百年"是"百年一遇"的前缀，已过滤
+            ("百年不遇", Array.Empty<(string, string)>()),
+            ("千年老二", Array.Empty<(string, string)>()),      // "千年"是"千年老二"的前缀，已过滤
+            ("千年虫",   Array.Empty<(string, string)>()),
+            ("千年健",   Array.Empty<(string, string)>()),
+            ("一笑千年", Array.Empty<(string, string)>()),      // "千年"是"一笑千年"的后缀，已过滤
+        };
+        foreach (var (text, expected) in dictNonTimeWordTests)
+        {
+            RunTest(recognizer, text, expected);
+        }
+
+        // 13.2.b "一千" 后面是"零"不是单位词（年/月/日等），DurationRegex 不匹配
+        // 所以 recognizer 不会提取"一千"，公共接口自然返回空
+        Console.WriteLine("\n--- 13.2.b 词典词非时间实体（recognizer 天然不匹配）---");
+        var dictNonTimeWordTestsB = new[]
+        {
+            ("一千零一夜", Array.Empty<(string, string)>()),     // "一千零一夜"是阿拉伯语故事集
+        };
+        foreach (var (text, expected) in dictNonTimeWordTestsB)
+        {
+            RunTest(recognizer, text, expected);
+        }
+
+        // 13.3 混合上下文：验证 recognizer + segmenter 协调处理词典词与时间实体
+        // "百年孤独"、"一笑千年"是词典词；"2021年1月1日"是时间实体；分词器应保护词典词
+        Console.WriteLine("\n--- 13.3 混合上下文（验证词典词+时间实体协调）---");
+        RunMixedContextTest(
+            "百年孤独是马尔克斯的名著，而2021年1月1日是新一年的开始。",
+            new[] { ("百年孤独", "dict"), ("2021年1月1日", "time") });
+
+        RunMixedContextTest(
+            "一笑千年，2021年5月1日出版",
+            new[] { ("一笑千年", "dict"), ("2021年5月1日", "time") });
+
+        RunMixedContextTest(
+            "一千零一夜是一本古老的阿拉伯故事集",
+            new[] { ("一千零一夜", "dict") });
+
+        // 13.4 验证 "今年春节" 作为完整 festival 实体被识别（不被拆为"今年"+"春节"）
+        Console.WriteLine("\n--- 13.4 相对时间节日整体识别（今年春节作为完整实体）---");
+        var relativeFestivalTests = new[]
+        {
+            ("妈，今年春节是2025年1月29日", new[] { ("今年春节", "festival") }),
+        };
+        foreach (var (text, expected) in relativeFestivalTests)
+        {
+            RunTest(recognizer, text, expected);
+        }
+
         // ========== 测试结果汇总 ==========
         Console.WriteLine("\n=== 测试结果汇总 ===");
         Console.WriteLine($"通过: {_passedCount}");
@@ -299,5 +375,51 @@ class TimeRecognizerDemo
             result = result.Remove(e.Start, e.End - e.Start).Insert(e.Start, $"[{e.Type}]");
         }
         return result;
+    }
+
+    /// <summary>
+    /// 混合上下文测试：验证 JiebaSegmenter 在包含词典词 + 时间实体的混合文本中
+    /// 能正确过滤词典词前缀的时间实体，保护完整词典词
+    /// </summary>
+    /// <param name="text">待分词文本</param>
+    /// <param name="expectedItems">期望在分词结果中出现的关键词 (word, category) 列表
+    ///   category="dict" 表示词典词（如"百年孤独"、"一笑千年"、"今年春节"），
+    ///   category="time" 表示时间实体（如"2021年1月1日"），
+    ///   区分两类是为了避免输出标签的歧义</param>
+    static void RunMixedContextTest(string text, (string word, string category)[] expectedItems)
+    {
+        Console.WriteLine($"文本: {text}");
+
+        var segmenter = new JiebaSegmenter();
+        var result = segmenter.Cut(text).ToList();
+        var joined = string.Join("╱", result);
+        Console.WriteLine($"分词: {joined}");
+
+        bool allPassed = true;
+        foreach (var (word, category) in expectedItems)
+        {
+            var label = category == "dict" ? "词典词" : "时间实体";
+            if (result.Contains(word))
+            {
+                Console.WriteLine($"  ✓ {label}: {word}");
+            }
+            else
+            {
+                Console.WriteLine($"  ✗ 缺失{label}: {word}");
+                allPassed = false;
+            }
+        }
+
+        if (allPassed)
+        {
+            Console.WriteLine("  通过 ✓");
+            _passedCount++;
+        }
+        else
+        {
+            Console.WriteLine("  失败 ✗");
+            _failedCount++;
+        }
+        Console.WriteLine();
     }
 }

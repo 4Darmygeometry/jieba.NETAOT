@@ -4,6 +4,7 @@ using JiebaNet.Segmenter.Common;
 using JiebaNet.Segmenter.PosSeg;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -49,6 +50,10 @@ namespace JiebaNet.NetFrameworkTest
             allPassed &= TestEntityProtectDisabled();
             allPassed &= TestWindowsVersionSegment();
             allPassed &= TestSpaceContainingWords();
+            allPassed &= TestDictWordVsTimeEntityConflict();
+            allPassed &= TestDictWordVsTimeEntityPerf();
+            allPassed &= TestAddWordLongerThanDefault();
+            allPassed &= TestAddWordProtectsTimeEntityPrefix();
 #endif
 
             Console.WriteLine();
@@ -1978,6 +1983,299 @@ namespace JiebaNet.NetFrameworkTest
                     Console.WriteLine("  失败 ✗ 混合场景带空格词未被正确识别");
                     return false;
                 }
+
+                Console.WriteLine("  通过 ✓");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  异常: {ex.Message}");
+                return false;
+            }
+        }
+
+        static bool TestDictWordVsTimeEntityConflict()
+        {
+            Console.WriteLine("[测试] 词典词与时间实体冲突...");
+            try
+            {
+                var segmenter = new JiebaSegmenter();
+
+                // 测试1："百年"是"百年孤独"等词典词的前缀
+                var text1 = "百年孤独";
+                var result1 = segmenter.Cut(text1).ToList();
+                var joined1 = string.Join("╱", result1);
+                Console.WriteLine($"  测试1: {text1}");
+                Console.WriteLine($"  结果: {joined1}");
+                if (!result1.Contains("百年孤独") || joined1.StartsWith("百年 ╱"))
+                {
+                    Console.WriteLine("  失败 ✗ '百年孤独'被错误拆分");
+                    return false;
+                }
+
+                // 测试2："千年"是"千年老二"等词典词的前缀
+                var text2 = "千年老二";
+                var result2 = segmenter.Cut(text2).ToList();
+                var joined2 = string.Join("╱", result2);
+                Console.WriteLine($"  测试2: {text2}");
+                Console.WriteLine($"  结果: {joined2}");
+                if (!result2.Contains("千年老二") || joined2.StartsWith("千年 ╱"))
+                {
+                    Console.WriteLine("  失败 ✗ '千年老二'被错误拆分");
+                    return false;
+                }
+
+                // 测试3："百年纪念"是词典词同时也是时间实体
+                var text3 = "百年纪念";
+                var result3 = segmenter.Cut(text3).ToList();
+                var joined3 = string.Join("╱", result3);
+                Console.WriteLine($"  测试3: {text3}");
+                Console.WriteLine($"  结果: {joined3}");
+                if (!result3.Contains("百年纪念"))
+                {
+                    Console.WriteLine("  失败 ✗ '百年纪念'未被正确识别");
+                    return false;
+                }
+
+                // 测试4："百年诞辰"是词典词同时也是时间实体
+                var text4 = "百年诞辰";
+                var result4 = segmenter.Cut(text4).ToList();
+                var joined4 = string.Join("╱", result4);
+                Console.WriteLine($"  测试4: {text4}");
+                Console.WriteLine($"  结果: {joined4}");
+                if (!result4.Contains("百年诞辰"))
+                {
+                    Console.WriteLine("  失败 ✗ '百年诞辰'未被正确识别");
+                    return false;
+                }
+
+                // 测试5："百年之后"是词典词
+                var text5 = "百年之后";
+                var result5 = segmenter.Cut(text5).ToList();
+                var joined5 = string.Join("╱", result5);
+                Console.WriteLine($"  测试5: {text5}");
+                Console.WriteLine($"  结果: {joined5}");
+                if (!result5.Contains("百年之后"))
+                {
+                    Console.WriteLine("  失败 ✗ '百年之后'未被正确识别为整体");
+                    return false;
+                }
+
+                // 测试6：混合场景
+                var text6 = "百年孤独与2021年1月1日的故事";
+                var result6 = segmenter.Cut(text6).ToList();
+                var joined6 = string.Join("╱", result6);
+                Console.WriteLine($"  测试6: {text6}");
+                Console.WriteLine($"  结果: {joined6}");
+                if (!result6.Contains("百年孤独"))
+                {
+                    Console.WriteLine("  失败 ✗ '百年孤独'在混合场景下被错误拆分");
+                    return false;
+                }
+                if (!result6.Contains("2021年1月1日"))
+                {
+                    Console.WriteLine("  失败 ✗ '2021年1月1日'未被正确识别为时间实体");
+                    return false;
+                }
+
+                // 测试7：批量验证词典词不拆分
+                var dictWords = new[]
+                {
+                    "百年", "百年一遇", "百年不遇", "百年之业", "百年之后", "百年之好",
+                    "百年之柄", "百年之约", "百年偕老", "百年史", "百年大业", "百年大计",
+                    "百年好事", "百年好合", "百年孤独", "百年战争", "百年树人", "百年歌",
+                    "百年纪念", "百年老", "百年诞辰", "百年谐老", "百年难遇",
+                    "千年", "千年一律", "千年一遇", "千年健", "千年怪兽", "千年泪",
+                    "千年湖", "千年老二", "千年虫",
+                    "一笑千年", "一千零一夜"
+                };
+                foreach (var word in dictWords)
+                {
+                    var result = segmenter.Cut(word).ToList();
+                    var joined = string.Join("╱", result);
+                    if (!result.Contains(word))
+                    {
+                        Console.WriteLine($"  失败 ✗ '{word}'被错误拆分: {joined}");
+                        return false;
+                    }
+                }
+                Console.WriteLine($"  批量验证 {dictWords.Length} 个词典词: 全部通过");
+
+                Console.WriteLine("  通过 ✓");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  异常: {ex.Message}");
+                return false;
+            }
+        }
+
+        static bool TestDictWordVsTimeEntityPerf()
+        {
+            Console.WriteLine("[测试] 词典词与时间实体过滤性能...");
+            try
+            {
+                var segmenter = new JiebaSegmenter();
+
+                var testTexts = new[]
+                {
+                    "百年孤独与2021年1月1日的故事",
+                    "千年老二在2021年5月1日出版了新作",
+                    "百年战争发生于100年前，百年纪念在2026年举行",
+                    "明天3月5日我去拜访百年一遇的朋友，2026年1月13日19点03分14秒见",
+                    "百年纪念大会将在2021年1月1日举行，届时将有千年老二等嘉宾出席"
+                };
+
+                // 预热
+                foreach (var text in testTexts)
+                {
+                    segmenter.Cut(text).ToList();
+                }
+
+                // 测量1000次调用的总时间
+                var sw = Stopwatch.StartNew();
+                const int iterations = 1000;
+                for (int i = 0; i < iterations; i++)
+                {
+                    foreach (var text in testTexts)
+                    {
+                        segmenter.Cut(text).ToList();
+                    }
+                }
+                sw.Stop();
+
+                var totalMs = sw.Elapsed.TotalMilliseconds;
+                var avgMs = totalMs / (iterations * testTexts.Length);
+                Console.WriteLine($"  5条文本 × {iterations}次 = {iterations * testTexts.Length}次分词");
+                Console.WriteLine($"  总耗时: {totalMs:F3}ms");
+                Console.WriteLine($"  平均每次: {avgMs * 1000:F3}μs ({avgMs:F3}ms)");
+
+                if (avgMs > 1.0)
+                {
+                    Console.WriteLine($"  警告 ⚠ 平均每次分词超过1ms，建议使用CommunityToolkit.HighPerformance优化");
+                }
+                else
+                {
+                    Console.WriteLine("  性能达标 ✓（毫秒级以内）");
+                }
+
+                Console.WriteLine("  通过 ✓");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  异常: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 验证：用户通过 AddWord 添加的新词若比默认 maxWordLength(30) 还长，
+        /// WordDictionary 内部的 _maxWordLength 会被自动扩展，
+        /// 使 FindLongestWordLength / FindLongestWordEndingAt 能正确处理超长词典词。
+        /// </summary>
+        static bool TestAddWordLongerThanDefault()
+        {
+            Console.WriteLine("[测试] AddWord 添加超长词典词（>30字符）...");
+            try
+            {
+                var segmenter = new JiebaSegmenter();
+
+                // 默认 _maxWordLength=30，添加一个 32 字符的词典词
+                var longWord = "北京召开的中国共产党第十九届中央委员会第四次全体会议发布公报全文";
+                if (longWord.Length <= 30)
+                {
+                    Console.WriteLine($"  失败 ✗ 测试用例词长({longWord.Length})不大于30，无法验证扩展逻辑");
+                    return false;
+                }
+
+                segmenter.AddWord(longWord, 9999);
+
+                // 1) 词典中应能找到该词
+                if (!WordDictionary.Instance.ContainsWord(longWord))
+                {
+                    Console.WriteLine($"  失败 ✗ '{longWord}' 未被加入词典");
+                    return false;
+                }
+
+                // 2) 包含该词的文本分词时，该词应作为整体保留
+                var text = $"这是{longWord}的职责范围";
+                var result = segmenter.Cut(text).ToList();
+                var joined = string.Join("╱", result);
+                Console.WriteLine($"  文本: {text}");
+                Console.WriteLine($"  分词: {joined}");
+
+                if (!result.Contains(longWord))
+                {
+                    Console.WriteLine($"  失败 ✗ 超长词典词 '{longWord}' 被切碎");
+                    return false;
+                }
+
+                // 3) MaxScanLength 应被扩展
+                if (WordDictionary.Instance.MaxScanLength < longWord.Length)
+                {
+                    Console.WriteLine($"  失败 ✗ MaxScanLength={WordDictionary.Instance.MaxScanLength} < {longWord.Length}");
+                    return false;
+                }
+                Console.WriteLine($"  MaxScanLength 已扩展为 {WordDictionary.Instance.MaxScanLength}（词长={longWord.Length}）");
+
+                Console.WriteLine("  通过 ✓");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  异常: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 验证：用户通过 AddWord 添加的词典词若包含完整的时间实体（如"12点口令"），
+        /// 则分词时该词典词应作为整体保留，RegexTimeRecognizer 也不会从中错误提取"12点"。
+        /// </summary>
+        static bool TestAddWordProtectsTimeEntityPrefix()
+        {
+            Console.WriteLine("[测试] AddWord 添加包含时间实体的词典词（12点口令）...");
+            try
+            {
+                var segmenter = new JiebaSegmenter();
+
+                // "12点"是时间实体（time），但用户自定义了词典词"12点口令"
+                segmenter.AddWord("12点口令", 100);
+
+                var text = "我的12点口令已更新，请查收";
+                var result = segmenter.Cut(text).ToList();
+                var joined = string.Join("╱", result);
+                Console.WriteLine($"  文本: {text}");
+                Console.WriteLine($"  分词: {joined}");
+
+                // 1) "12点口令"应作为整体保留
+                if (!result.Contains("12点口令"))
+                {
+                    Console.WriteLine($"  失败 ✗ '12点口令' 未被作为整体保留: {joined}");
+                    return false;
+                }
+
+                // 2) 识别器中不应单独出现"12点"时间实体（因为它是"12点口令"的前缀）
+                var recognizer = new RegexTimeRecognizer(WordDictionary.Instance);
+                var entities = recognizer.Recognize(text);
+                var hasLone12点 = entities.Any(e => e.Text == "12点");
+                if (hasLone12点)
+                {
+                    Console.WriteLine($"  失败 ✗ 识别器错误地在'12点口令'中提取出单独的'12点'时间实体");
+                    return false;
+                }
+
+                // 3) 对照：原文本中独立"12点"应正常识别
+                var soloText = "会议将在12点开始";
+                var soloEntities = recognizer.Recognize(soloText);
+                if (!soloEntities.Any(e => e.Text == "12点"))
+                {
+                    Console.WriteLine($"  失败 ✗ 独立'12点'未被识别为时间实体（说明过滤器误伤）");
+                    return false;
+                }
+                Console.WriteLine($"  对照: 独立'12点'正常识别 ✓");
 
                 Console.WriteLine("  通过 ✓");
                 return true;
