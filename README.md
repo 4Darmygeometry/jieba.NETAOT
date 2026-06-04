@@ -40,6 +40,9 @@ jieba.NETAOT（AOTba）是[jieba中文分词](https://github.com/fxsjy/jieba)的
 * 基于前缀词典实现高效的词图扫描，生成句子中汉字所有可能成词情况所构成的有向无环图 (DAG)
 * 采用了动态规划查找最大概率路径, 找出基于词频的最大切分组合
 * 对于未登录词，采用了基于汉字成词能力的HMM模型，使用了Viterbi算法
+* 日期时间等实体识别是基于正则的，同时具有过滤算法，避免提取非时间词典词（如百年孤独）
+* 通过GB18030_2022.cs实现GB18030-2022汉字合规
+* 通过RuneHelper.cs和GraphemeClusterHelper.cs实现emoji识别
 
 ## 安装和配置
 
