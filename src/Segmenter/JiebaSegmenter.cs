@@ -164,7 +164,7 @@ namespace JiebaNet.Segmenter
                 return CutIt(text, cutMethod, reHan, reSkip, false);
             }
 
-            // 识别日期时间实体
+            // 识别日期时间实体（RegexTimeRecognizer 内部已过滤词典词前缀/后缀）
             var timeEntities = TimeRecognizer.Value.Recognize(text);
 
             // 查找文本中的带空格词典词
@@ -329,8 +329,9 @@ namespace JiebaNet.Segmenter
             var result = new List<string>();
 
             // 搜索引擎模式也进行日期时间识别
-            // 先识别日期时间实体，避免提取日期时间实体的子词
+            // RegexTimeRecognizer 内部已过滤词典词前缀/后缀的时间实体
             var timeEntities = TimeRecognizer.Value.Recognize(text);
+
             var words = Cut(text, hmm: hmm);
             
             foreach (var w in words)

@@ -26,6 +26,16 @@ namespace JiebaNet.Segmenter
         internal readonly ConcurrentDictionary<string, int> Trie = new ConcurrentDictionary<string, int>();
 
         /// <summary>
+        /// 词典中实际出现的最大词长（按 .Length 计）。
+        /// 初始化为 30 保持向后兼容；词典加载完毕后会被覆盖为实际最大值；
+        /// 用户通过 AddWord 添加新词时若超过当前最大值，也会自动扩展。
+        /// 供 FindLongestWordLength / FindLongestWordEndingAt / MatchEmoji 等限定
+        /// 最大扫描长度的方法使用，避免硬编码 30 把过长的词典词切碎。
+        /// </summary>
+        private int _maxWordLength = 30;
+        private readonly object _maxWordLengthLock = new object();
+
+        /// <summary>
         /// Emoji专用前缀树，用于快速匹配复杂emoji（ZWJ序列等）
         /// </summary>
         internal readonly ConcurrentDictionary<string, int> EmojiTrie = new ConcurrentDictionary<string, int>();
@@ -377,6 +387,16 @@ namespace JiebaNet.Segmenter
             Trie[word] = freq;
             AddToTotal(freq);
 
+            // 记录最大词长（仅在频率>0 的真实词上更新，前缀不参与）
+            if (freq > 0 && word.Length > _maxWordLength)
+            {
+                lock (_maxWordLengthLock)
+                {
+                    if (word.Length > _maxWordLength)
+                        _maxWordLength = word.Length;
+                }
+            }
+
             // 记录带空格词，用于分词时整体保护
             if (word.Contains(' '))
             {
@@ -612,6 +632,16 @@ namespace JiebaNet.Segmenter
             Trie[word] = freq;
             AddToTotal(freq);
 
+            // 记录最大词长（仅在频率>0 的真实词上更新，前缀不参与）
+            if (freq > 0 && word.Length > _maxWordLength)
+            {
+                lock (_maxWordLengthLock)
+                {
+                    if (word.Length > _maxWordLength)
+                        _maxWordLength = word.Length;
+                }
+            }
+
             // 记录带空格词
             if (word.Contains(' '))
             {
@@ -656,8 +686,8 @@ namespace JiebaNet.Segmenter
             var maxLen = 0;
             var len = 1;
 
-            // 限制最大匹配长度（最长的emoji约20个字符）
-            var maxCheck = Math.Min(text.Length - startIndex, 30);
+            // 限制最大匹配长度：根据 emojiTrie 实际最大键长（带安全余量）
+            var maxCheck = Math.Min(text.Length - startIndex, MaxScanLength);
 
             while (len <= maxCheck)
             {
@@ -679,6 +709,132 @@ namespace JiebaNet.Segmenter
             }
 
             return maxLen;
+        }
+
+        /// <summary>
+        /// 最大扫描长度。默认 30（emoji 与词典词硬编码历史值），
+        /// 词典加载或 AddWord 时若检测到更长词条会自动扩展。
+        /// 公开该属性的目的是让 RegexTimeRecognizer 等组件
+        /// 在做最大长度截断时与词典保持一致。
+        /// </summary>
+        public int MaxScanLength
+        {
+            get { lock (_maxWordLengthLock) { return _maxWordLength; } }
+        }
+
+        /// <summary>
+        /// 查找从指定位置开始的最长词典词长度。
+        /// 用于判断时间实体是否为词典词的前缀（避免破坏词典词的完整性）。
+        /// 例如：在"百年孤独"中，从位置0开始查找，最长词典词为"百年孤独"（长度4）。
+        /// </summary>
+        /// <param name="text">源文本</param>
+        /// <param name="start">开始匹配的位置</param>
+        /// <returns>最长词典词的长度（字符数），如果没有找到返回0</returns>
+        public int FindLongestWordLength(string text, int start)
+        {
+            if (string.IsNullOrEmpty(text) || start < 0 || start >= text.Length)
+                return 0;
+
+            var textSpan = text.AsSpan(start);
+            var maxLen = 0;
+            var len = 1;
+
+            // 限制最大匹配长度，使用词典动态维护的最大词长（避免硬编码 30 切碎长词）
+            var maxCheck = Math.Min(textSpan.Length, MaxScanLength);
+
+            while (len <= maxCheck)
+            {
+                var frag = textSpan.Slice(0, len);
+                if (ContainsPrefix(frag))
+                {
+                    if (GetTrieValue(frag) > 0)
+                    {
+                        maxLen = len;
+                    }
+                    len++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return maxLen;
+        }
+
+        /// <summary>
+        /// 查找在指定位置结束的词典词的最大长度。
+        /// 用于判断时间实体是否为词典词的后缀（避免破坏词典词的完整性）。
+        /// 例如：在"一笑千年"中，在位置4结束查找，最长词典词为"一笑千年"（长度4）。
+        /// </summary>
+        /// <param name="text">源文本</param>
+        /// <param name="end">结束位置（开区间，词典词的最后一个字符索引+1）</param>
+        /// <returns>最长词典词的长度（字符数），如果没有找到返回0</returns>
+        public int FindLongestWordEndingAt(string text, int end)
+        {
+            if (string.IsNullOrEmpty(text) || end <= 0 || end > text.Length)
+                return 0;
+
+            var textSpan = text.AsSpan();
+            var maxLen = 0;
+            // 限制向前查找的最大长度，使用词典动态维护的最大词长
+            var maxCheck = Math.Min(end, MaxScanLength);
+
+            // 从 end-1 向前遍历，逐个检查 [end-len, end) 是否为词典词
+            for (var len = 1; len <= maxCheck; len++)
+            {
+                var frag = textSpan.Slice(end - len, len);
+                if (GetTrieValue(frag) > 0)
+                {
+                    maxLen = len;
+                }
+            }
+
+            return maxLen;
+        }
+
+        /// <summary>
+        /// 过滤时间实体：如果某个时间实体是某个词典词的前缀或后缀（即存在更长的词典词），
+        /// 则认为该时间实体不应该被提取（避免破坏词典词的完整性）。
+        ///
+        /// 规则：
+        /// - 时间实体 T (长度 L_T) 在位置 [S, E)
+        /// - 词典中存在以 S 开头的最长词，长度为 L_start
+        /// - 词典中存在以 E 结尾的最长词，长度为 L_end
+        /// - 若 L_start == L_T 且 L_end == L_T：T 本身就是完整词典词，保留
+        /// - 若 L_start &gt; L_T：T 是某个更长词典词的前缀，丢弃
+        /// - 若 L_end &gt; L_T：T 是某个更长词典词的后缀，丢弃
+        ///
+        /// 取消强弱类型判定：对所有类型一视同仁，统一保留完整词典词。
+        /// 例如"今年春节"作为整体提取后是 festival 实体，且"今年春节"本身是完整词典词，
+        ///   T=春节 在"妈，今年春节是..."中会作为"今年春节"的后缀被丢弃；
+        ///   而 T=今年春节 则是完整词典词被保留。
+        /// 性能：每个时间实体最多两次 O(L) Trie 遍历。
+        /// 该方法被 RegexTimeRecognizer 调用，确保 ITimeRecognizer 公开 API
+        /// 不会因词典词前缀/后缀而误识别（如"百年孤独"中的"百年"、"今年春节"中的"春节"）。
+        /// </summary>
+        public List<TimeEntity> FilterTimeEntitiesByDictionary(string text, List<TimeEntity> timeEntities)
+        {
+            if (timeEntities == null || timeEntities.Count == 0)
+                return timeEntities ?? new List<TimeEntity>();
+
+            var filtered = new List<TimeEntity>(timeEntities.Count);
+            foreach (var entity in timeEntities)
+            {
+                var entityLen = entity.Text.Length;
+                var longestStartLen = FindLongestWordLength(text, entity.Start);
+                var longestEndLen = FindLongestWordEndingAt(text, entity.End);
+
+                // 前缀检查：存在以 entity.Start 开头的更长词典词
+                // 后缀检查：存在以 entity.End 结尾的更长词典词
+                if (longestStartLen <= entityLen && longestEndLen <= entityLen)
+                {
+                    // 不是词典词的前缀或后缀（或本身就是完整词典词），保留
+                    filtered.Add(entity);
+                }
+                // 否则，该时间实体是词典词的前缀或后缀，会破坏词典词的完整性，丢弃
+            }
+            return filtered;
         }
 
         /// <summary>
