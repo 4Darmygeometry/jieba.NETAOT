@@ -807,3 +807,7 @@ var keywords = kp.ExtractKeywords("你需要通过cet-4考试，去𧒽岗吃�
 使用ITimeRecognizer recognizer = new RegexTimeRecognizer();方法进行实体提取。
 
 为了防止gitee镜像误判readme，此处不展示具体实体识别结果。具体代码可见TimeRecognizerDemo
+
+### 捐赠
+[![pmBoq4e.md.jpg](https://s41.ax1x.com/2026/07/06/pmBoq4e.md.jpg)](https://imgchr.com/i/pmBoq4e)
+[![pmBTSDP.md.png](https://s41.ax1x.com/2026/07/06/pmBTSDP.md.png)](https://imgchr.com/i/pmBTSDP)
