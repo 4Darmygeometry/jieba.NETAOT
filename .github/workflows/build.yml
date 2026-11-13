@@ -18,10 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET 10.0
+      - name: Setup .NET 11.0
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '11.0.x'
 
       - name: Restore dependencies
         run: dotnet restore
@@ -56,7 +56,7 @@ jobs:
         run: dotnet publish test/AotTest/AotTest.csproj -c Release -r win-x64
 
       - name: Run AOT test
-        run: test/AotTest/bin/Release/net10.0/win-x64/publish/JiebaNet.AotTest.exe
+        run: test/AotTest/bin/Release/net11.0/win-x64/publish/JiebaNet.AotTest.exe
 
       - name: Run .NET Framework 4.8 test
         run: test/NetFrameworkTest/bin/Release/net48/JiebaNet.NetFrameworkTest.exe
@@ -65,7 +65,7 @@ jobs:
         run: dotnet publish test/TimeRecognizerDemo/TimeRecognizerDemo/TimeRecognizerDemo.csproj -c Release -r win-x64
 
       - name: Run TimeRecognizerDemo test
-        run: test/TimeRecognizerDemo/TimeRecognizerDemo/bin/Release/net10.0/win-x64/publish/TimeRecognizerDemo.exe
+        run: test/TimeRecognizerDemo/TimeRecognizerDemo/bin/Release/net11.0/win-x64/publish/TimeRecognizerDemo.exe
 
       - name: Pack jieba.NETAOT
         if: startsWith(github.ref, 'refs/tags/v')
