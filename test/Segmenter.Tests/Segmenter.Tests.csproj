@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <AssemblyName>JiebaNet.Segmenter.Tests</AssemblyName>
     <RootNamespace>JiebaNet.Segmenter.Tests</RootNamespace>
     <DebugType>portable</DebugType>
@@ -15,6 +15,11 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <DefineConstants>$(DefineConstants);AOTBA</DefineConstants>
+  </PropertyGroup>
+
+  <!-- .NET 11+强制runtime-async以提升性能 -->
+  <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
 
   <ItemGroup>
